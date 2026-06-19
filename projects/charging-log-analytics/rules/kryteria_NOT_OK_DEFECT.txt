@@ -1,0 +1,667 @@
+KRYTERIA USTAWIENIA WYNIKU NOT OK I DEFECT
+
+1. Najważniejsza zasada
+
+Statusy, state, temperatura, procenty, komunikaty z testera oraz screeny są danymi wejściowymi.
+Wynikiem analizy jest klasyfikacja tych danych jako: OK, NOT OK, DEFECT, N/A, MISSING DATA / NOT TESTED.
+
+Ogólna logika:
+
+status / state / temperatura / procent / brak danych
+        -> interpretacja względem typu testu
+        -> OK / NOT OK
+        -> jeżeli problem jest potwierdzony lub znany
+        -> DEFECT + Defect ID
+
+NOT OK ustawiamy wtedy, gdy odczytane dane testowe nie spełniają oczekiwanego zachowania dla danego typu testu.
+DEFECT ustawiamy wtedy, gdy wynik NOT OK jest potwierdzoną niezgodnością / problemem technicznym i można go powiązać z konkretnym Defect ID albo z powtarzalnym problemem wymagającym utworzenia defektu.
+
+2. Rodzaje danych uwzględniane przy ocenie
+
+Przy ocenie wyniku należy uwzględniać wszystkie zależności między danymi:
+
+- typ testu,
+- sample,
+- software,
+- telefon / receiver,
+- pozycja testowa,
+- card position dla RFID,
+- obiekt FOD,
+- temperatura warunków testu,
+- temperatura zmierzona,
+- procent / wartość pomiarowa,
+- status / state z testera,
+- komunikaty typu NO CHARGING, NO FOD DETECTED, TOGGLING STATUS,
+- wynik wpisany ręcznie: OK, NO OK, NOT OK, NOK,
+- Defect ID,
+- opis defektu,
+- informacja, czy test był wymagany.
+
+3. Kryteria ogólne dla NOT OK
+
+Wynik NOT OK powinien zostać ustawiony, jeżeli dla danej kombinacji:
+
+- sample,
+- software,
+- telefon / receiver,
+- pozycja testowa,
+- typ testu,
+- warunki testu,
+
+występuje odczyt niezgodny z oczekiwanym zachowaniem.
+
+Do odczytów wejściowych należą m.in.:
+
+- status 0-17,
+- STATE 0-17,
+- TOGGLING STATUS,
+- NO CHARGING,
+- temperatura,
+- procent / poziom pomiaru,
+- NO FOD DETECTED,
+- puste pole,
+- N/A,
+- Test not required.
+
+4. NOT OK dla testów WLC / Start Charging
+
+Dotyczy głównie testów typu WLC lub START CHARGING.
+
+4.1. Kryterium OK
+
+Dla zwykłego testu ładowania oczekiwanym stanem jest najczęściej:
+
+- status 3 / State 3 - telefon wykryty i ładowanie trwa.
+
+Czyli OK występuje wtedy, gdy w wymaganej pozycji testowej telefon się ładuje.
+
+4.2. Kryteria NOT OK - brak ładowania
+
+NOT OK należy ustawić, jeżeli w teście ładowania pojawia się:
+
+- NO CHARGING - telefon nie ładuje się mimo oczekiwania ładowania,
+- status 0 - WCM nieaktywny,
+- status 1 - powierzchnia pusta / idle,
+- status 2 - telefon wykryty, ale w pełni naładowany; ocena zależna od SoC,
+- status 6 - foreign object + telefon, ale brak ładowania.
+
+Uwaga: status 2 jest zależny od kontekstu. Jeśli telefon faktycznie był w pełni naładowany, nie musi być błędem. Jeśli test wymagał aktywnego ładowania, należy traktować go jako NOT OK.
+
+4.3. Kryteria NOT OK - wykrycie obiektu obcego w zwykłym teście ładowania
+
+W zwykłym teście ładowania bez obiektu FOD jako NOT OK należy traktować:
+
+- status 4 - foreign object detected, brak Qi communication,
+- status 5 - FOD + lower efficiency,
+- status 6 - foreign object + telefon, brak ładowania.
+
+4.4. Kryteria NOT OK - przegrzanie
+
+- status 8 - WCM overtemperature.
+
+Jeżeli test nie dotyczy specjalnie scenariusza przegrzania, status 8 oznacza NOT OK.
+
+4.5. Kryteria NOT OK - błąd wewnętrzny lub stan awaryjny
+
+Jako NOT OK należy traktować:
+
+- status 9 - control unit defective / error,
+- status 13 - internal error from Qi device,
+- status 14 - unknown error,
+- status 17 - WCA not active safe state involving FUSI or ISO26262.
+
+Te statusy wskazują na błąd, stan awaryjny albo niestabilność systemu, więc powinny skutkować NOT OK, chyba że dany test celowo sprawdza reakcję safety.
+
+4.6. Kryteria NOT OK - niestabilny status
+
+- TOGGLING STATUS / toggling status - przełączanie między stanami.
+
+To wskazuje na niestabilne zachowanie. W typowym teście funkcjonalnym powinno być traktowane jako NOT OK.
+
+5. NOT OK dla testów Charging 0-100%
+
+Dotyczy testów typu CHARGING 0-100%.
+
+5.1. Kryterium OK
+
+Dla testu ładowania od 0 do 100% wynik jest poprawny, jeśli:
+
+- telefon jest wykrywany,
+- ładowanie działa,
+- nie ma przerwania ładowania,
+- nie pojawia się błąd,
+- nie pojawia się przegrzanie,
+- nie ma niestabilnego przełączania statusów.
+
+Najbardziej typowy prawidłowy status:
+
+- status 3 - phone charging.
+
+5.2. Kryteria NOT OK
+
+NOT OK należy ustawić, jeżeli w którejkolwiek wymaganej pozycji pojawi się:
+
+- NO CHARGING - brak ładowania,
+- status 0 - WCM nieaktywny,
+- status 1 - powierzchnia pusta / idle,
+- status 4 - wykrycie obiektu obcego bez założenia FOD,
+- status 6 - telefon + foreign object, brak ładowania,
+- status 8 - overtemperature,
+- status 9 - control unit error,
+- status 13 - internal error from Qi device,
+- status 14 - unknown error,
+- status 17 - safety state,
+- TOGGLING STATUS - niestabilna praca.
+
+Uwaga: status 5 jest zależny od interpretacji testu. Jeśli oznacza ładowanie z FOD i niższą efektywnością, w zwykłym teście charging może być traktowany jako podejrzany / NOT OK, szczególnie gdy oczekiwane jest stabilne status 3.
+
+6. NOT OK dla testów NFC
+
+Dotyczy testów typu NFC.
+
+6.1. Bezpośrednia interpretacja wyniku
+
+- OK - wynik OK,
+- NO OK - wynik NOT OK,
+- NOT OK - wynik NOT OK,
+- NOK - wynik NOT OK,
+- NO Ok / No OK - wynik NOT OK,
+- puste pole - brak wyniku / test nieuzupełniony,
+- N/A - nie dotyczy, jeśli wynika z konfiguracji.
+
+6.2. Kryteria NOT OK dla NFC
+
+NOT OK ustawiamy, jeśli:
+
+- w pozycji testowej wpisano NO OK, NOT OK, NOK lub podobny wariant,
+- NFC działa wtedy, kiedy zgodnie z testem powinno być zablokowane,
+- NFC nie działa wtedy, kiedy zgodnie z testem powinno działać,
+- wynik jest zależny od pozycji i w części pozycji występuje NO OK,
+- wynik jest zależny od receivera / telefonu i tylko określone modele dają NO OK.
+
+W NFC statusy WLC nie są głównym wynikiem. Głównym wynikiem jest bezpośrednia ocena OK / NO OK.
+
+7. NOT OK dla testów FOD
+
+Dotyczy testów typu FOD.
+
+7.1. Dane wejściowe FOD
+
+Dane FOD składają się zwykle z:
+
+- typu obiektu FOD,
+- temperatury warunków testu,
+- pozycji testowej,
+- State / status,
+- wartości procentowej,
+- temperatury zmierzonej.
+
+Przykładowa struktura danych:
+
+State 3 / 55,38% temp -4,72
+
+7.2. Kryterium OK dla FOD
+
+Wynik jest OK, jeśli system zachowuje się zgodnie z oczekiwaniem dla danego obiektu FOD i temperatury.
+
+W zależności od scenariusza oczekiwane mogą być różne zachowania:
+
+- obiekt obcy bez telefonu - wykrycie FOD, brak ładowania,
+- obiekt obcy z telefonem - wykrycie FOD i odpowiednia reakcja systemu,
+- kontrola temperatury - temperatura w dopuszczalnym zakresie,
+- test efektywności / detekcji - procent w oczekiwanym zakresie.
+
+7.3. Kryteria NOT OK - brak detekcji FOD
+
+- NO FOD DETECTED - system nie wykrył obiektu obcego.
+
+Jeżeli obiekt FOD był fizycznie obecny, brak detekcji oznacza NOT OK.
+
+7.4. Kryteria NOT OK - ładowanie trwa mimo obiektu obcego
+
+NOT OK należy ustawić, jeśli:
+
+- status 3 / State 3 oznacza, że telefon ładuje się mimo obecności FOD, a test wymaga zatrzymania ładowania,
+- status 5 / State 5 oznacza FOD + niższą efektywność, ale ładowanie trwa, a oczekiwane było zatrzymanie ładowania.
+
+To kryterium zależy od wymagań testu. Jeśli dla danego obiektu oczekiwane jest przerwanie ładowania, wtedy State 3 lub State 5 oznacza NOT OK.
+
+7.5. Kryteria NOT OK - brak ładowania w scenariuszu, gdzie ładowanie było wymagane
+
+NOT OK należy ustawić, jeśli:
+
+- NO CHARGING występuje tam, gdzie test wymagał kontynuacji ładowania,
+- status 6 / State 6 występuje tam, gdzie brak ładowania jest nieoczekiwany.
+
+W FOD status 6 może być poprawny albo niepoprawny - zależy od oczekiwanego zachowania w danym scenariuszu.
+
+7.6. Kryteria NOT OK - nieprawidłowa temperatura
+
+NOT OK należy ustawić, jeśli występuje:
+
+- inappropriate temperature,
+- zbyt wysoka temperatura pomiarowa,
+- temperatura poza dopuszczalnym zakresem,
+- status 8 - WCM overtemperature.
+
+W FOD bardzo ważna jest zależność:
+
+obiekt FOD + temperatura warunków + temperatura zmierzona + pozycja
+
+Ten sam status może być oceniony inaczej w zależności od temperatury i obiektu.
+
+7.7. Kryteria NOT OK - procent poza oczekiwanym zakresem
+
+Wynik NOT OK powinien być ustawiony, jeśli wartość procentowa:
+
+- przekracza dopuszczalny próg,
+- jest zbyt niska,
+- wskazuje na brak detekcji,
+- nie odpowiada oczekiwanemu zachowaniu dla danego obiektu FOD.
+
+Bez osobnej specyfikacji progu nie da się automatycznie wskazać jednej granicy procentowej. Próg trzeba powiązać z wymaganiem testowym.
+
+8. NOT OK dla RFID Protection
+
+Dotyczy testów typu RFID Protection lub RFID Protection_2.
+
+8.1. Dane wejściowe RFID Protection
+
+Dane obejmują:
+
+- sample,
+- software,
+- receiver / telefon,
+- card position, np. CP1, CP2 itd.,
+- pozycję testową,
+- status z testera.
+
+8.2. Kryterium OK
+
+Dla RFID Protection oczekiwane są przede wszystkim statusy ochronne, np.:
+
+- status 15 - NFC not active WCA NFC card - RFID protection,
+- status 16 - NFC not active - two or more NFC devices detected.
+
+W testach RFID Protection wynikiem OK jest zwykle sytuacja, w której system poprawnie blokuje / ogranicza działanie NFC/RFID zgodnie z logiką ochrony.
+
+8.3. Kryteria NOT OK - RFID protection nie aktywuje się
+
+NOT OK należy ustawić, jeśli:
+
+- pojawia się status 3, czyli telefon się ładuje / system nie zablokował działania tam, gdzie powinien,
+- brakuje statusu 15 lub statusu 16 tam, gdzie ochrona powinna się aktywować.
+
+8.4. Kryteria NOT OK - system wykrywa inny problem zamiast RFID protection
+
+NOT OK należy ustawić, jeśli pojawia się:
+
+- status 4 - foreign object detected zamiast oczekiwanej ochrony RFID,
+- status 13 - internal error from Qi device,
+- status 17 - safety state,
+- TOGGLING STATUS - niestabilne przełączanie stanów.
+
+8.5. Kryteria NOT OK - zależność od pozycji karty
+
+Jeżeli dla jednego receivera:
+
+- CP1 jest OK,
+- CP2 jest OK,
+- ale CPx daje status 3, status 4, status 13 lub inny nieoczekiwany status,
+
+to dana kombinacja receiver + card position + pozycja testowa powinna być oznaczona jako NOT OK.
+
+9. Kryteria ustawienia DEFECT
+
+9.1. Kryterium podstawowe
+
+DEFECT ustawiamy wtedy, gdy wynik NOT OK jest powiązany z rzeczywistym problemem produktu, software'u, konfiguracji lub funkcji i można go przypisać do znanego lub nowego defektu.
+
+Defect może występować jako:
+
+- Defect ID,
+- numer defektu,
+- opis defektu,
+- powiązanie błędnego wyniku z konkretną niezgodnością.
+
+9.2. Kiedy NOT OK powinno przejść w DEFECT
+
+Wynik NOT OK powinien zostać oznaczony jako DEFECT, jeśli spełniony jest co najmniej jeden z warunków opisanych poniżej.
+
+9.2.1. Problem jest powtarzalny
+
+Defect należy ustawić, jeśli ta sama niezgodność pojawia się:
+
+- w wielu pozycjach,
+- na tym samym telefonie,
+- na tym samym software,
+- na tym samym sample,
+- przy tej samej pozycji karty,
+- przy tym samym obiekcie FOD,
+- w kilku powtórzeniach testu.
+
+Przykład:
+
+Samsung S24 + C2 + Position 5 + status 8
+-> powtarzalny overtemperature
+-> NOT OK
+-> DEFECT, jeśli problem potwierdzony
+
+9.2.2. Problem ma znany Defect ID
+
+Jeśli w kolumnie Defect wpisano numer, wynik jest już powiązany z defektem.
+
+Przykład:
+
+status 8 / status 6 / toggling status + wpisany Defect ID = DEFECT
+
+9.2.3. Problem dotyczy funkcji bezpieczeństwa lub ochrony
+
+Defect powinien być ustawiony szczególnie wtedy, gdy problem dotyczy:
+
+- RFID Protection,
+- NFC protection,
+- FOD detection,
+- overtemperature,
+- safety state,
+- internal error.
+
+Przykłady:
+
+- RFID protection nie aktywuje się -> NOT OK / DEFECT,
+- system nie wykrywa FOD -> NOT OK / DEFECT,
+- telefon ładuje się mimo obiektu obcego -> NOT OK / DEFECT,
+- WCM przechodzi w overtemperature -> NOT OK / DEFECT,
+- internal error from Qi device -> NOT OK / DEFECT.
+
+9.2.4. Problem wpływa na podstawową funkcję ładowania
+
+Defect należy ustawić, jeśli problem uniemożliwia lub destabilizuje podstawową funkcję, np.:
+
+- NO CHARGING, jeśli telefon powinien się ładować,
+- status 0, jeśli WCM powinien być aktywny,
+- status 1, jeśli powierzchnia nie powinna być idle,
+- status 6, jeśli brak ładowania jest nieoczekiwany,
+- TOGGLING STATUS, jeśli niestabilność jest powtarzalna,
+- status 8, jeśli występuje przegrzanie,
+- status 9, 13, 14, 17, jeśli pojawia się błąd systemowy / safety.
+
+9.2.5. Problem występuje tylko dla konkretnej zależności
+
+Defect może być przypisany nie do całego projektu, ale do konkretnej kombinacji danych.
+
+Przykłady zależności:
+
+sample + software + phone + position
+sample + software + receiver + card position + position
+sample + software + FOD object + temperature + position
+
+Jeżeli problem występuje tylko w jednej takiej kombinacji, nadal może być defektem, ale opis defektu powinien zawierać tę zależność.
+
+10. Kiedy NOT OK nie musi oznaczać DEFECT
+
+Wynik NOT OK nie powinien automatycznie oznaczać DEFECT w poniższych przypadkach.
+
+10.1. Test nie był wymagany
+
+Jeżeli wartość to:
+
+- Test not required,
+- N/A,
+- '-', jeśli zgodnie z legendą oznacza brak zastosowania,
+
+to nie należy automatycznie klasyfikować wyniku jako DEFECT.
+
+10.2. Brakuje danych
+
+Puste pola oznaczają raczej:
+
+- brak wykonania testu,
+- brak uzupełnienia wyniku,
+- brak danych z testera.
+
+Nie należy ich od razu oznaczać jako DEFECT.
+Zalecana klasyfikacja:
+
+- Missing data,
+- Not tested,
+- To be checked.
+
+10.3. Problem wynika z warunków testu
+
+Przykłady sytuacji, które nie muszą oznaczać defektu produktu:
+
+- BLOWER FAULT - problem setupu,
+- nieprawidłowa temperatura otoczenia - test invalid / repeat needed,
+- błędna konfiguracja telefonu - repeat / check setup,
+- telefon w pełni naładowany przy status 2 - zależne od SoC.
+
+10.4. Problem jest pojedynczy i niepotwierdzony
+
+Jeśli występuje jednorazowe NO OK, NO CHARGING, status 8 lub TOGGLING STATUS, ale:
+
+- nie ma powtórzenia,
+- nie ma Defect ID,
+- nie ma potwierdzenia,
+- warunki testu są niejasne,
+
+to najpierw powinno być:
+
+NOT OK / To be verified
+
+a dopiero po potwierdzeniu:
+
+DEFECT
+
+11. Zależności między wynikiem a rodzajem danych
+
+11.1. Zależność od typu testu
+
+Ten sam status może oznaczać coś innego w zależności od testu.
+
+status 3:
+- WLC / Charging: zwykle OK,
+- FOD: może być NOT OK, jeśli FOD powinien zatrzymać ładowanie,
+- RFID Protection: często NOT OK, jeśli ochrona RFID powinna się aktywować.
+
+status 4:
+- WLC / Charging: zwykle NOT OK,
+- FOD: może być OK, jeśli oczekiwano FOD detection,
+- RFID Protection: może być NOT OK, jeśli oczekiwano RFID protection.
+
+status 6:
+- WLC / Charging: zwykle NOT OK,
+- FOD: może być OK lub NOT OK zależnie od scenariusza FOD,
+- RFID Protection: raczej NOT OK.
+
+status 8:
+- WLC / Charging: NOT OK,
+- FOD: NOT OK,
+- RFID Protection: NOT OK.
+
+status 15:
+- WLC / Charging: zależne od testu,
+- FOD: raczej nie dotyczy,
+- RFID Protection: zwykle OK.
+
+status 16:
+- WLC / Charging: zależne od testu,
+- FOD: raczej nie dotyczy,
+- RFID Protection: zwykle OK.
+
+TOGGLING STATUS:
+- WLC / Charging: NOT OK,
+- FOD: NOT OK,
+- RFID Protection: NOT OK.
+
+11.2. Zależność od pozycji
+
+Wynik powinien być oceniany osobno dla każdej pozycji:
+
+Position 1, Position 2, ..., Position 18.
+
+Jeżeli tylko jedna pozycja jest błędna, wynik może być częściowo NOT OK.
+Jeżeli wiele pozycji jest błędnych, wzrasta prawdopodobieństwo DEFECT.
+
+11.3. Zależność od telefonu / receivera
+
+Ten sam sample i software może działać poprawnie dla jednego telefonu, a niepoprawnie dla innego.
+
+Kryterium NOT OK / DEFECT powinno być analizowane w układzie:
+
+sample + software + phone/receiver + position
+
+Nie należy uogólniać wyniku na cały projekt, jeśli problem występuje tylko dla jednego modelu telefonu.
+
+11.4. Zależność od software
+
+Jeżeli ten sam telefon działa inaczej na różnych wersjach software, problem może być związany z SW.
+
+Przykłady interpretacji:
+
+- B3 / SW 003.x = NOT OK, C2 / SW 005.x = OK -> poprawa w nowszym SW,
+- C1 / SW 004.x = NOT OK, C2 / SW 005.x = NOT OK -> problem nadal otwarty,
+- tylko jedna wersja SW daje błąd -> możliwy defect software.
+
+11.5. Zależność od sample
+
+Jeśli problem występuje tylko na jednym sample, może wskazywać na:
+
+- problem hardware,
+- różnicę konstrukcyjną,
+- problem montażowy,
+- niedojrzałą wersję próbki.
+
+Układ oceny:
+
+sample + software + phone + position + status
+
+11.6. Zależność od FOD object
+
+W FOD wynik zależy od typu obiektu.
+
+Przykłady obiektów:
+
+- 1 Cent EUR,
+- 2 Cent EUR,
+- 5 Cent EUR,
+- 1 euro,
+- 2 euro,
+- 10 Cent USD,
+- 25 Cent USD,
+- Chocolate in packaging,
+- Chewing gum in packaging,
+- Paper clip.
+
+Kryterium NOT OK / DEFECT należy rozpatrywać jako:
+
+sample + software + FOD object + temperature + position + state/status + temp measured
+
+11.7. Zależność od temperatury
+
+W FOD i overtemperature wynik zależy od:
+
+- temperatury warunków testu,
+- temperatury zmierzonej,
+- statusu status 8,
+- opisu appropriate / inappropriate temperature.
+
+Jeżeli temperatura jest poza zakresem, wynik może być NOT OK.
+Jeżeli powtarza się dla konkretnego obiektu / pozycji / telefonu, może być DEFECT.
+
+11.8. Zależność od card position w RFID
+
+W RFID Protection wynik zależy od:
+
+receiver + card position + pozycja testowa
+
+Przykład:
+
+Samsung S24 + CP1 + Position 1 = status 15 -> OK
+Samsung S24 + CP5 + Position 7 = status 3 -> NOT OK
+
+Jeśli protection nie działa tylko dla konkretnego CP, defect powinien być opisany z tą pozycją.
+
+12. Szczegółowa logika decyzyjna
+
+Krok 1 - sprawdź, czy test dotyczy danej konfiguracji.
+
+Jeśli wartość to:
+
+- N/A,
+- Test not required,
+- '-',
+
+nie ustawiaj automatycznie NOT OK ani DEFECT.
+
+Krok 2 - sprawdź, czy dane są uzupełnione.
+
+Jeśli pole jest puste:
+
+- nie ustawiaj od razu DEFECT,
+- oznacz jako brak danych / test nieuzupełniony,
+- ewentualnie wynik: NOT TESTED albo TO BE CHECKED.
+
+Krok 3 - określ typ testu.
+
+Przykładowe typy testów i główne kryteria:
+
+- WLC - czy ładowanie startuje,
+- CHARGING 0-100% - czy ładowanie przebiega stabilnie,
+- NFC - OK / NO OK,
+- FOD - reakcja na obiekt obcy + temperatura,
+- RFID Protection - aktywacja ochrony RFID/NFC.
+
+Krok 4 - porównaj status z oczekiwaniem.
+
+Przykłady:
+
+- WLC + status 3 = OK,
+- WLC + NO CHARGING = NOT OK,
+- FOD + NO FOD DETECTED = NOT OK,
+- RFID + status 15 = OK,
+- RFID + status 3 = NOT OK,
+- NFC + NO OK = NOT OK.
+
+Krok 5 - sprawdź, czy problem ma Defect ID.
+
+Jeżeli kolumna Defect zawiera numer:
+
+NOT OK + Defect ID = DEFECT
+
+Jeżeli nie ma numeru:
+
+NOT OK bez Defect ID = problem do weryfikacji / potencjalny defect
+
+13. Proponowana klasyfikacja końcowa
+
+- Oczekiwane zachowanie spełnione -> OK.
+- Bezpośrednio wpisane NO OK, NOT OK, NOK, NO Ok -> NOT OK.
+- Status niezgodny z typem testu -> NOT OK.
+- Temperatura niezgodna -> NOT OK.
+- Brak detekcji FOD przy obecnym obiekcie -> NOT OK.
+- Brak RFID protection tam, gdzie jest wymagana -> NOT OK.
+- Niestabilne przełączanie statusów -> NOT OK.
+- NOT OK + wpisany Defect ID -> DEFECT.
+- NOT OK powtarzalny, ale bez ID -> POTENTIAL DEFECT / TO BE CREATED.
+- Puste pole -> MISSING DATA / NOT TESTED.
+- N/A lub Test not required -> NOT APPLICABLE.
+
+14. Najkrótsze podsumowanie
+
+NOT OK ustawiamy, gdy dane z testera, screenów lub pomiarów nie spełniają oczekiwania dla danego typu testu.
+
+DEFECT ustawiamy, gdy ten NOT OK jest potwierdzony, powtarzalny albo ma przypisany numer defektu.
+
+Najważniejsza zależność:
+
+typ testu
++ sample
++ software
++ telefon / receiver
++ pozycja
++ status/state
++ temperatura / procent
++ FOD object lub card position
++ Defect ID
+= końcowa ocena OK / NOT OK / DEFECT

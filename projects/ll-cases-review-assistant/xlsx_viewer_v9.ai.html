@@ -1,0 +1,1946 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Podgląd XLSX w HTML (wiele plików • zakładki • filtrowanie • zapis)</title>
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+    :root {
+      --bg: #f7f7f7;
+      --panel: #f7f7f7;
+      --text: #111;
+      --muted: #6b6b6b;
+      --border: #e6e6e6;
+      --primary: #0b5ed7;
+      --primary-ghost: #e7f1ff;
+      --danger: #b30000;
+      --danger-ghost: #ffe9e9;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: "IBM Plex Sans", "Segoe UI", Arial, sans-serif;
+      margin: 0;
+      color: var(--text);
+      background: linear-gradient(180deg, #ffffff 0%, #f7f7f7 55%, #f2f4f7 100%);
+      overflow-x: hidden;
+    }
+
+    .app-shell { width: 100%; max-width: none; margin: 20px 0 40px; padding: 0 16px; }
+    .app-header { display:flex; align-items:center; justify-content:space-between; gap: 12px; margin-bottom: 16px; }
+    .app-title { display:flex; align-items:center; }
+    .app-logo { width: clamp(240px, 32vw, 360px); height: auto; max-width: 100%; display: block; }
+    .btn-wide { width: clamp(240px, 32vw, 360px); }
+    .app-subtitle { font-size: 12px; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); }
+    .footer-note { margin-top: 12px; text-align: right; }
+
+    .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 18px; padding: 16px; box-shadow: 0 12px 24px rgba(0,0,0,0.08); }
+    .panel-row { display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap; }
+    .panel-actions { margin-top: 12px; }
+    .field { display:flex; flex-direction:column; gap:6px; min-width: 240px; }
+    .field label, .field span { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+    .field input { width: 100%; box-sizing: border-box; padding: 8px 10px; border: 1px solid #d6d6d6; border-radius: 10px; font: inherit; background: #fff; }
+    .field input:focus { outline: 2px solid rgba(11,94,215,.18); border-color: #0b5ed7; }
+
+    input[type="file"] { font: inherit; }
+    input[type="file"]::file-selector-button {
+      margin-right: 10px;
+      border: 1px solid #cfd5df;
+      background: #fff;
+      padding: 7px 12px;
+      border-radius: 10px;
+      font: inherit;
+      cursor: pointer;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+    }
+
+    .btn { border:1px solid #cfd5df; background:#fff; padding:8px 14px; border-radius:12px; cursor:pointer; user-select:none; font-weight:600; letter-spacing:.01em; box-shadow:0 1px 2px rgba(0,0,0,0.08); transition: box-shadow .15s ease, transform .06s ease, border-color .15s ease; }
+    .btn:hover { box-shadow:0 6px 14px rgba(0,0,0,0.12); border-color:#bfc6d3; }
+    .btn:active { transform: translateY(1px); }
+    .btn.primary { border-color: var(--primary); background: var(--primary); color: #fff; }
+    .btn.primary:hover { box-shadow:0 8px 18px rgba(11,94,215,0.25); }
+    .btn.danger { border-color: var(--danger); background: var(--danger-ghost); color: #7a0000; }
+    .btn:disabled { opacity:.55; cursor:not-allowed; box-shadow:none; }
+
+    .section { margin-top: 18px; }
+    .section-header { margin: 14px 0 8px; font-size: 11px; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); display:flex; align-items:center; gap:8px; }
+    .section-body { background:#fff; border:1px solid var(--border); border-radius: 14px; padding: 12px; width: 100%; }
+
+    .tabs { display:flex; gap:8px; flex-wrap:wrap; margin: 12px 0 8px; }
+    .tab { border:1px solid #dfe3ea; background:#fff; padding:7px 14px; border-radius:999px; cursor:pointer; user-select:none; font-weight:500; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+    .tab.active { background:#111; color:#fff; border-color:#111; box-shadow:0 8px 16px rgba(0,0,0,0.18); }
+    .section-label { margin-top: 10px; font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
+    .fileview { display:none; }
+    .fileview.active { display:block; }
+    .sheet { display:none; }
+    .sheet.active { display:block; }
+
+    .sheet-title { margin: 10px 0 6px; font-size: 14px; opacity:.95; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+
+    .grid-wrap { overflow-y:auto; overflow-x:hidden; border:1px solid #e5e5e5; border-radius:12px; width: 100%; max-width: 100%; background:#fff; }
+    table.grid { border-collapse:collapse; width: 100%; min-width: 100%; table-layout: fixed; }
+    table.grid th, table.grid td {
+      border:1px solid #e6e6e6;
+      padding:4px 6px;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+    table.grid td.empty { background:#fff; }
+    table.grid thead th { position: sticky; top: 0; z-index: 3; }
+    table.grid thead tr.filter-row th { top: 28px; z-index: 2; }
+    a.cell-link { color: inherit; text-decoration: underline; }
+    .chkcol { text-align:center; min-width: 44px !important; width:44px; }
+    .checkdatecol { text-align:center; min-width: 100px !important; width: auto; }
+    .filter-input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 5px 8px;
+      border: 1px solid #d6d6d6;
+      border-radius: 8px;
+      font: inherit;
+      font-size: 12px;
+      background: #fff;
+    }
+    .msg { opacity:.8; font-size: 13px; line-height: 1.4; }
+    #wiDescription { white-space: normal; min-height: 40px; }
+    .spacer { flex: 1 1 auto; }
+
+    /* ===== MODAL ===== */
+    .modal.hidden { display: none; }
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      padding: 20px;
+    }
+    .modal-card{
+      background: #fff;
+      border-radius: 14px;
+      padding: 16px;
+      width: 360px;
+      box-shadow: 0 14px 40px rgba(0,0,0,0.25);
+    }
+    .modal-card.modal-lg {
+      width: min(1100px, 94vw);
+      max-height: 88vh;
+      display:flex;
+      flex-direction:column;
+    }
+    .modal-card h3{ margin: 0 0 12px 0; }
+
+    .modal-label{ display: block; margin: 10px 0; font-size: 14px; }
+    .modal-label input{
+      width: 100%;
+      box-sizing: border-box;
+      margin-top: 6px;
+      padding: 8px 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font: inherit;
+      background: #fff;
+    }
+
+    .modal-header { display:flex; align-items:center; justify-content:space-between; gap: 12px; margin-bottom: 8px; }
+    .modal-title { font-size: 16px; font-weight: 600; }
+    .modal-subtitle { font-size: 12px; color: var(--muted); }
+
+    .modal-actions{ display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+
+    .modal-header-actions { display:flex; gap:8px; align-items:center; }
+    .ai-link { color: var(--primary); text-decoration: underline; font-weight: 600; }
+    .ai-link:hover { text-decoration: none; }
+    .row-highlight { background: #eef4ff !important; outline: 2px solid rgba(11,94,215,0.35); }
+
+    .ai-status { font-size: 12px; color: var(--muted); margin: 6px 0 10px; }
+    .ai-help { margin: 8px 0 10px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: #f1f5ff; font-size: 12px; line-height: 1.4; }
+    .ai-help.hidden { display: none; }
+    .ai-table-wrap { flex: 1 1 auto; min-height: 200px; }
+    .ai-table-scroll { max-height: 60vh; overflow: auto; border: 1px solid var(--border); border-radius: 12px; background:#fff; }
+    table.ai-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    table.ai-table th, table.ai-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      vertical-align: top;
+      white-space: normal;
+      word-break: break-word;
+    }
+    table.ai-table thead th { background: var(--primary-ghost); position: sticky; top: 0; z-index: 1; }
+    table.ai-table tbody tr:nth-child(even) { background: #fafafa; }
+    .ai-empty { border: 1px dashed #d0d4dd; border-radius: 12px; padding: 18px; color: var(--muted); text-align: center; background: #fff; }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <div class="app-header">
+      <div class="app-title">
+        <img class="app-logo" src="ChatGPT Image 3 lut 2026, 13_09_11.jpg" alt="LL Cases Comparer" />
+      </div>
+      <div class="app-subtitle">Podglad XLSX</div>
+    </div>
+
+    <div class="panel control-panel">
+      <div class="panel-row">
+        <div class="field">
+          <span>Pliki XLSX</span>
+          <input id="file" type="file" accept=".xlsx,.csv" multiple />
+        </div>
+
+        <div class="field">
+          <span>Work item ID</span>
+          <input id="wiId" type="number" min="1" step="1" />
+        </div>
+        <button id="loadWiDesc" class="btn" type="button">Pobierz opis work itemu</button>
+      </div>
+
+        <div class="field" style="min-width: 360px;">
+          <span>Słowa kluczowe</span>
+          <input id="keywords" type="text" placeholder='np. emc, "in vehicle", reflash*, heat*sink' />
+        </div>
+        <button id="kwSearch" class="btn" type="button">Szukaj w Case Title/Tags</button>
+        <button id="kwClear" class="btn" type="button">Wyczyść szukanie</button>
+
+        <div class="field" style="min-width: 240px;">
+          <span>Szukaj w</span>
+          <select id="kwScope" class="filter-input" style="height: 36px;">
+            <option value="both" selected>Tags + Case Title</option>
+            <option value="tags">Tylko Tags</option>
+            <option value="title">Tylko Case Title</option>
+          </select>
+        </div>
+
+      <div class="panel-row panel-actions">
+        <button id="saveXlsx" class="btn primary btn-wide" type="button" disabled>Pobierz zmodyfikowany XLSX (aktywny plik)</button>
+        <button id="pushToJazz" class="btn" type="button" disabled style="display:none">Ustaw Check Date w Jazz (zaznaczone)</button>
+        <button id="aiAnalyze" class="btn primary" type="button" disabled>Analizuj pokrycie casów z AI</button>
+      </div>
+    </div>
+
+    <section class="section">
+      <div class="section-header">Opis work itemu</div>
+      <div class="section-body">
+        <div id="wiDescription" class="msg"></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-header">Wyniki szukania słów kluczowych</div>
+      <div class="section-body">
+        <div id="kwStatus" class="msg"></div>
+        <div id="kwResults" class="msg"></div>
+      </div>
+    </section>
+
+
+    <section class="section">
+      <div class="section-header">Pliki</div>
+      <div class="section-body">
+        <div id="fileTabs" class="tabs"></div>
+        <div id="fileViews"></div>
+      </div>
+    </section>
+
+    <div class="app-subtitle footer-note">Page created by Natalia Uliasz</div>
+  </div>
+
+  <div id="authModal" class="modal hidden">
+    <div class="modal-card">
+      <h3>Logowanie do Jazz</h3>
+
+      <label class="modal-label">
+        Login:
+        <input id="authUser" type="text" autocomplete="username" />
+      </label>
+
+      <label class="modal-label">
+        Haslo:
+        <input id="authPass" type="password" autocomplete="current-password" />
+      </label>
+
+      <div class="modal-actions">
+        <button id="authCancel" class="btn" type="button">Anuluj</button>
+        <button id="authOk" class="btn primary" type="button">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="aiModal" class="modal hidden">
+    <div class="modal-card modal-lg">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title">Wynik analizy AI</div>
+          <div class="modal-subtitle">Mapowanie problemow do test case'ow</div>
+        </div>
+        <div class="modal-header-actions">
+          <button id="aiDownload" class="btn primary" type="button" disabled>Pobierz XLSX</button>
+          <button id="aiHelp" class="btn" type="button" aria-label="Wyjaśnij typy powiązania">?</button>
+          <button id="aiClose" class="btn" type="button">Zamknij</button>
+        </div>
+      </div>
+      <div id="aiStatus" class="ai-status"></div>
+      <div id="aiHelpBox" class="ai-help hidden">
+        <strong>Typy powiązania:</strong>
+        <div>A — bezpośrednie dopasowanie do problemu.</div>
+        <div>B — częściowe lub warunkowe dopasowanie.</div>
+        <div>C — słabe lub niejednoznaczne dopasowanie.</div>
+        <strong>Analiza jest generowana przez AI, może zawierać błędy, a ze względu na niedeterministyczny charakter modelu wyniki kolejnych analiz mogą nie być identyczne.</strong>
+      </div>
+      <div id="aiTableWrap" class="ai-table-wrap"></div>
+    </div>
+  </div>
+
+<script src="https://unpkg.com/exceljs/dist/exceljs.min.js"></script>
+  <script>
+    const $file = document.getElementById('file');
+    const $fileTabs = document.getElementById('fileTabs');
+    const $fileViews = document.getElementById('fileViews');
+    const $loadExample = document.getElementById('loadExample');
+    const $saveXlsx = document.getElementById('saveXlsx');
+    const $pushToJazz = document.getElementById('pushToJazz');
+    const $aiAnalyze = document.getElementById('aiAnalyze');
+
+    const $aiModal = document.getElementById('aiModal');
+    const $aiStatus = document.getElementById('aiStatus');
+    const $aiTableWrap = document.getElementById('aiTableWrap');
+    const $aiClose = document.getElementById('aiClose');
+    const $aiDownload = document.getElementById('aiDownload');
+    const $aiHelp = document.getElementById('aiHelp');
+    const $aiHelpBox = document.getElementById('aiHelpBox');
+
+    // ===== WORK ITEM DESCRIPTION (UI) =====
+    const $wiId = document.getElementById('wiId');
+    const $loadWiDesc = document.getElementById('loadWiDesc');
+    const $wiDescription = document.getElementById('wiDescription');
+    const $keywords = document.getElementById('keywords');
+    const $kwScope = document.getElementById('kwScope');
+    const $kwSearch = document.getElementById('kwSearch');
+    const $kwClear = document.getElementById('kwClear');
+    const $kwStatus = document.getElementById('kwStatus');
+    const $kwResults = document.getElementById('kwResults');
+
+    let keywordFilterActive = false;
+    let lastKeywordQuery = '';
+
+
+// ===== MODAL LOGOWANIA (JS) =====
+    const $authModal = document.getElementById('authModal');
+    const $authUser = document.getElementById('authUser');
+    const $authPass = document.getElementById('authPass');
+    const $authOk = document.getElementById('authOk');
+    const $authCancel = document.getElementById('authCancel');
+
+    function askCredentials(defaultUser = '') {
+      return new Promise((resolve) => {
+        $authUser.value = defaultUser || '';
+        $authPass.value = '';
+
+        $authModal.classList.remove('hidden');
+        $authUser.focus();
+
+        const cleanup = () => {
+          $authOk.onclick = null;
+          $authCancel.onclick = null;
+          document.removeEventListener('keydown', onKeyDown);
+          $authModal.classList.add('hidden');
+        };
+
+        const onKeyDown = (e) => {
+          if (e.key === 'Escape') {
+            cleanup();
+            resolve(null);
+          }
+          if (e.key === 'Enter') {
+            $authOk.click();
+          }
+         };
+
+        document.addEventListener('keydown', onKeyDown);
+
+        $authCancel.onclick = () => {
+          cleanup();
+          resolve(null);
+        };
+
+        $authOk.onclick = () => {
+          const user = $authUser.value.trim();
+          const password = $authPass.value;
+          cleanup();
+
+          if (!user || !password) {
+            resolve(null);
+            return;
+          }
+          resolve({ user, password });
+        };
+      });
+    }
+
+
+    // ===== AI MODAL (UI) =====
+    function openAiModal() {
+      $aiModal.classList.remove('hidden');
+      if ($aiHelpBox) $aiHelpBox.classList.add('hidden');
+    }
+
+    function closeAiModal() {
+      $aiModal.classList.add('hidden');
+    }
+
+    $aiClose.addEventListener('click', closeAiModal);
+    $aiModal.addEventListener('click', (e) => {
+      if (e.target === $aiModal) closeAiModal();
+    });
+
+    if ($aiHelp && $aiHelpBox) {
+      $aiHelp.addEventListener('click', () => {
+        $aiHelpBox.classList.toggle('hidden');
+      });
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !$aiModal.classList.contains('hidden')) {
+        closeAiModal();
+      }
+    });
+
+    function setAiStatus(text) {
+      $aiStatus.textContent = text || '';
+    }
+
+    function normalizeHeader(text) {
+      return String(text || '')
+        .toLowerCase()
+        .replace(/\s+/g, ' ')
+        .replace(/[\u0105\u0104]/g, 'a')
+        .replace(/[\u0107\u0106]/g, 'c')
+        .replace(/[\u0119\u0118]/g, 'e')
+        .replace(/[\u0142\u0141]/g, 'l')
+        .replace(/[\u0144\u0143]/g, 'n')
+        .replace(/[\u00F3\u00D3]/g, 'o')
+        .replace(/[\u015B\u015A]/g, 's')
+        .replace(/[\u017C\u017B]/g, 'z')
+        .replace(/[\u017A\u0179]/g, 'z');
+    }
+
+    function normalizeText(s) {
+      return String(s || '')
+        .toLowerCase()
+        .replace(/\s+/g, ' ')
+        .replace(/[’']/g, "'")
+        .replace(/[–—]/g, '-')
+        // PL znaki jak w normalizeHeader
+        .replace(/[\u0105\u0104]/g, 'a')
+        .replace(/[\u0107\u0106]/g, 'c')
+        .replace(/[\u0119\u0118]/g, 'e')
+        .replace(/[\u0142\u0141]/g, 'l')
+        .replace(/[\u0144\u0143]/g, 'n')
+        .replace(/[\u00F3\u00D3]/g, 'o')
+        .replace(/[\u015B\u015A]/g, 's')
+        .replace(/[\u017C\u017B]/g, 'z')
+        .replace(/[\u017A\u0179]/g, 'z')
+        .trim();
+    }
+
+    // Split po przecinku, ale szanuj cudzysłowy: emc, "in vehicle", reflash*
+    function parseKeywordList(input) {
+      const s = String(input || '').trim();
+      if (!s) return [];
+
+      const out = [];
+      let cur = '';
+      let inQuotes = false;
+
+      for (let i = 0; i < s.length; i++) {
+        const ch = s[i];
+        if (ch === '"') { inQuotes = !inQuotes; continue; }
+        if (ch === ',' && !inQuotes) {
+          const t = cur.trim();
+          if (t) out.push(t);
+          cur = '';
+          continue;
+        }
+        cur += ch;
+      }
+      const t = cur.trim();
+      if (t) out.push(t);
+
+      // normalizacja + usunięcie pustych
+      return out.map(x => x.trim()).filter(Boolean);
+    }
+
+    function escapeRegex(s) {
+      return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    // wildcard: "*" -> dowolny ciąg znaków
+    function keywordToRegex(keyword) {
+      const raw = String(keyword || '').trim();
+      if (!raw) return null;
+
+      const norm = normalizeText(raw);
+
+      // jeśli user podał coś w stylu: in vehicle (bez *), robimy "contains"
+      // jeśli poda z *, robimy regex z wildcardem
+      if (norm.includes('*')) {
+    // zamień * na .*
+    const parts = norm.split('*').map(escapeRegex);
+    const re = parts.join('.*');
+    return new RegExp(re, 'i');
+  }
+
+      // bez wildcarda: dopasowanie substringu
+      return new RegExp(escapeRegex(norm), 'i');
+    }
+
+    // Buduje listę matcherów
+    function buildMatchers(input) {
+      const list = parseKeywordList(input);
+      const matchers = [];
+      for (const k of list) {
+        const re = keywordToRegex(k);
+        if (re) matchers.push({ raw: k, re });
+      }
+      return matchers;
+    }
+
+    // Zwraca: { matched: [..], missing: [..], ok: bool }
+    function matchCaseText(caseTitle, tags, matchers, scope) {
+      let hayRaw = '';
+      if (scope === 'tags') hayRaw = `${tags || ''}`;
+      else if (scope === 'title') hayRaw = `${caseTitle || ''}`;
+      else hayRaw = `${caseTitle || ''} ${tags || ''}`; // both (default)
+
+      const hay = normalizeText(hayRaw);
+
+      const matched = [];
+      const missing = [];
+
+      for (const m of matchers) {
+        if (m.re.test(hay)) matched.push(m.raw);
+        else missing.push(m.raw);
+      }
+      return { matched, missing, ok: matched.length > 0 };
+    }
+
+
+    function applyKeywordSearchToActiveSheet() {
+      const sheetDiv = document.querySelector('.sheet.active');
+      if (!sheetDiv) return;
+
+      const query = ($keywords?.value || '').trim();
+      lastKeywordQuery = query;
+
+      const matchers = buildMatchers(query);
+      const scope = ($kwScope?.value || 'both');
+
+
+      // brak słów kluczowych -> wyłącz
+      if (!matchers.length) {
+        keywordFilterActive = false;
+        $kwStatus.textContent = '';
+        $kwResults.innerHTML = '';
+        // pokaż wszystko + usuń highlight
+        sheetDiv.querySelectorAll('tbody tr').forEach(tr => {
+          tr.style.display = '';
+          tr.classList.remove('row-highlight');
+        });
+        return;
+      }
+
+      keywordFilterActive = true;
+
+      // Ustal kolumny Title i Tags, żeby czytać tekst z tabeli (to szybciej niż z ExcelJS)
+      const f = files[activeFileIndex];
+      const ws = f?.wb?.worksheets?.[activeSheetIndex];
+      if (!ws) return;
+
+      const colId = findHeaderCol(ws, 'Test Case ID') || findHeaderCol(ws, 'ID');
+      const colTitle = findHeaderCol(ws, 'Case Title') || findHeaderCol(ws, 'Title');
+      const colTags = findHeaderCol(ws, 'Tags') || findHeaderCol(ws, 'Tag');
+
+      // mapuj "excel col" -> "table cell index"
+      // tabela ma na początku dodatkową kolumnę checkboxów, więc:
+      // excel col 1 -> table idx 1, excel col 2 -> table idx 2, itd.
+      // ALE uwzględnij merge/skip: u Ciebie prościej będzie czytać z DOM po nagłówkach:
+      // dlatego zrobimy mapę indeksów po tekście nagłówka.
+
+      const headerCells = Array.from(sheetDiv.querySelectorAll('thead tr:first-child th')).map(th => (th.innerText || '').trim());
+      const idxByHeader = new Map();
+      headerCells.forEach((h, idx) => idxByHeader.set(normalizeText(h), idx));
+
+      const idxTitle = idxByHeader.get(normalizeText('Case Title')) ?? idxByHeader.get(normalizeText('Title'));
+      const idxTags = idxByHeader.get(normalizeText('Tags')) ?? idxByHeader.get(normalizeText('Tag'));
+      const idxId = idxByHeader.get(normalizeText('ID')) ?? idxByHeader.get(normalizeText('Test Case ID'));
+
+      const rows = Array.from(sheetDiv.querySelectorAll('tbody tr'));
+      let hits = [];
+
+      rows.forEach(tr => {
+        const tds = tr.children;
+        const title = idxTitle != null ? (tds[idxTitle]?.innerText || '') : '';
+        const tags = idxTags != null ? (tds[idxTags]?.innerText || '') : '';
+        const id = idxId != null ? (tds[idxId]?.innerText || tr.dataset.caseId || '') : (tr.dataset.caseId || '');
+
+        const m = matchCaseText(title, tags, matchers, scope);
+
+        // logika: pokazuj tylko trafienia (OR, czyli „cokolwiek pasuje”)
+        const show = m.ok;
+        tr.style.display = show ? '' : 'none';
+        tr.classList.toggle('row-highlight', show);
+
+        if (show) {
+          hits.push({ id, title, tags, matched: m.matched, missing: m.missing });
+        }
+      });
+
+      $kwStatus.textContent = `Znaleziono: ${hits.length} dopasowań (dla: ${matchers.map(x => x.raw).join(', ')})`;
+
+      // Wypisz listę + brakujące słowa (czyli „czego brakuje w tej frazie”)
+      // Uwaga: "missing" ma sens szczególnie jeśli w przyszłości dodasz tryb AND.
+      const maxShow = 40;
+      const view = hits.slice(0, maxShow).map(h => {
+        const miss = h.missing.length ? ` • brak: ${h.missing.join(', ')}` : '';
+        const mat = h.matched.length ? ` • match: ${h.matched.join(', ')}` : '';
+        const idLink = h.id ? `<a class="ai-link" href="${buildJazzWorkItemUrl(h.id)}" target="_blank" rel="noopener noreferrer">${h.id}</a>` : '(brak ID)';
+        return `<div>• ${idLink} — ${h.title}${mat}${miss}</div>`;
+      }).join('');
+
+      $kwResults.innerHTML = view || '(brak dopasowań)';
+
+      if (hits.length > maxShow) {
+        $kwResults.innerHTML += `<div style="margin-top:8px;opacity:.75;">Pokazano ${maxShow} z ${hits.length} wyników.</div>`;
+      }
+    }
+    
+    $kwSearch?.addEventListener('click', () => applyKeywordSearchToActiveSheet());
+    $kwClear?.addEventListener('click', () => {
+      if ($keywords) $keywords.value = '';
+      applyKeywordSearchToActiveSheet();
+    });
+    $keywords?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') applyKeywordSearchToActiveSheet();
+    });
+    $kwScope?.addEventListener('change', () => applyKeywordSearchToActiveSheet());
+
+
+    function isCaseIdHeader(text) {
+      const h = normalizeHeader(text);
+      return h.includes('powiazany case id') || h === 'case id' || h.endsWith('case id');
+    }
+
+    function buildJazzWorkItemUrl(caseId) {
+      const id = String(caseId || '').trim();
+      if (!id) return JAZZ_BASE_URL;
+      return `${JAZZ_WORKITEM_URL_PREFIX}${encodeURIComponent(id)}`;
+    }
+
+    function focusCaseRow(caseId) {
+      const id = String(caseId || '').trim();
+      if (!id) return;
+
+      const sheetDiv = document.querySelector('.sheet.active');
+      if (!sheetDiv) return;
+
+      const rows = Array.from(sheetDiv.querySelectorAll('tbody tr[data-case-id]'));
+      let row = rows.find(r => (r.dataset.caseId || '') === id);
+      if (!row) row = rows.find(r => (r.dataset.caseId || '').toLowerCase() === id.toLowerCase());
+      if (!row) return;
+
+      row.classList.add('row-highlight');
+      row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(() => row.classList.remove('row-highlight'), 2000);
+    }
+
+    function splitMarkdownRow(line) {
+      let s = line.trim();
+      if (s.startsWith('|')) s = s.slice(1);
+      if (s.endsWith('|')) s = s.slice(0, -1);
+      return s.split('|').map(x => x.trim());
+    }
+
+    function isSeparatorLine(line) {
+      return /^\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)+\|?$/.test(line.trim());
+    }
+
+    function parseMarkdownTable(md) {
+      if (!md) return null;
+      const lines = md.split(/\r?\n/).map(l => l.trim()).filter(l => l.length);
+      for (let i = 0; i < lines.length - 1; i++) {
+        if (!lines[i].includes('|')) continue;
+        if (!isSeparatorLine(lines[i + 1])) continue;
+        const header = splitMarkdownRow(lines[i]);
+        const rows = [];
+        for (let j = i + 2; j < lines.length; j++) {
+          if (!lines[j].includes('|')) break;
+          if (isSeparatorLine(lines[j])) continue;
+          rows.push(splitMarkdownRow(lines[j]));
+        }
+        if (header.length) return { header, rows };
+      }
+      return null;
+    }
+
+    function aiCellToText(value) {
+      if (value == null) return '';
+      if (Array.isArray(value)) {
+        return value.map(aiCellToText).filter(v => v !== '').join(', ');
+      }
+      if (typeof value === 'object') {
+        if (value.id != null) return String(value.id);
+        if (value.value != null) return String(value.value);
+        if (value.text != null) return String(value.text);
+        if (value.name != null) return String(value.name);
+        try { return JSON.stringify(value); } catch (_) { return String(value); }
+      }
+      return String(value);
+    }
+
+    function buildAiTable(headers, rows, linkCols) {
+      const linkSet = (linkCols instanceof Set) ? linkCols : new Set();
+      const wrap = document.createElement('div');
+      wrap.className = 'ai-table-scroll';
+
+      const table = document.createElement('table');
+      table.className = 'ai-table';
+
+      const thead = document.createElement('thead');
+      const trh = document.createElement('tr');
+      headers.forEach(h => {
+        const th = document.createElement('th');
+        th.textContent = h;
+        trh.appendChild(th);
+      });
+      thead.appendChild(trh);
+      table.appendChild(thead);
+
+      const tbody = document.createElement('tbody');
+      rows.forEach(r => {
+        const tr = document.createElement('tr');
+        for (let i = 0; i < headers.length; i++) {
+          const td = document.createElement('td');
+          const cellText = aiCellToText(r[i]);
+          if (linkSet.has(i) && cellText.trim()) {
+            const a = document.createElement('a');
+            a.className = 'ai-link';
+            a.href = buildJazzWorkItemUrl(cellText);
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+            a.textContent = cellText;
+            td.appendChild(a);
+          } else {
+            td.textContent = cellText;
+          }
+          tr.appendChild(td);
+        }
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+      wrap.appendChild(table);
+      return wrap;
+    }
+
+    function renderAiResult(md) {
+      $aiTableWrap.innerHTML = '';
+
+      const trimmed = (md || '').trim();
+      if (!trimmed) {
+        const empty = document.createElement('div');
+        empty.className = 'ai-empty';
+        empty.textContent = 'Brak danych do wyswietlenia.';
+        lastAiTable = null;
+        $aiDownload.disabled = true;
+        $aiTableWrap.appendChild(empty);
+        return;
+      }
+
+      const parsed = parseMarkdownTable(trimmed);
+      if (!parsed) {
+        lastAiTable = { headers: ['Wynik'], rows: [[trimmed]] };
+        $aiDownload.disabled = false;
+        $aiTableWrap.appendChild(buildAiTable(['Wynik'], [[trimmed]], new Set()));
+        return;
+      }
+
+      const headers = parsed.header.length ? parsed.header : ['Wynik'];
+      const rows = parsed.rows.length ? parsed.rows : [['']];
+
+      let maxCols = headers.length;
+      rows.forEach(r => { if (r.length > maxCols) maxCols = r.length; });
+
+      const finalHeaders = headers.slice();
+      for (let i = headers.length; i < maxCols; i++) {
+        finalHeaders.push(`Kolumna ${i + 1}`);
+      }
+
+      const normalized = rows.map(r => {
+        const row = r.slice(0, maxCols);
+        while (row.length < maxCols) row.push('');
+        return row;
+      });
+
+      const linkCols = new Set();
+      finalHeaders.forEach((h, idx) => { if (isCaseIdHeader(h)) linkCols.add(idx); });
+
+      const normalizedText = normalized.map(r => r.map(aiCellToText));
+      lastAiTable = { headers: finalHeaders, rows: normalizedText };
+      $aiDownload.disabled = false;
+      $aiTableWrap.appendChild(buildAiTable(finalHeaders, normalizedText, linkCols));
+    }
+
+    async function downloadAiXlsx() {
+      if (!lastAiTable) return;
+
+      const wb = new ExcelJS.Workbook();
+      const ws = wb.addWorksheet('AI_Analysis');
+
+      ws.addRow(lastAiTable.headers);
+      lastAiTable.rows.forEach(r => ws.addRow(r));
+
+      ws.columns.forEach(col => {
+        let maxLen = 12;
+        col.eachCell({ includeEmpty: true }, cell => {
+          const v = cell.value != null ? String(cell.value) : '';
+          if (v.length > maxLen) maxLen = v.length;
+        });
+        col.width = Math.min(48, maxLen + 2);
+      });
+
+      const buf = await wb.xlsx.writeBuffer();
+      const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'ai_analysis.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    $aiDownload.addEventListener('click', () => {
+      downloadAiXlsx().catch(() => {});
+    });
+
+    let files = [];
+    let activeFileIndex = -1;
+    let activeSheetIndex = 0;
+    let lastAiTable = null;
+
+    const CHECK_DATE_HEADER = 'Check Date';
+    const CHECK_DATE_VALUE = 'applied';
+    const JAZZ_BASE_URL = 'https://jazz.example.internal';
+    const JAZZ_WORKITEM_URL_PREFIX = `${JAZZ_BASE_URL}/ccm/resource/itemName/com.ibm.team.workitem.WorkItem/`;
+
+    function argbToRgba(argb) {
+      if (!argb || typeof argb !== 'string') return null;
+      let hex = argb.replace('#','');
+      if (hex.length === 8) {
+        let aByte = hex.slice(0,2);
+        let a = parseInt(aByte, 16) / 255;
+        if (a === 0) a = 1;
+        const r = parseInt(hex.slice(2,4), 16);
+        const g = parseInt(hex.slice(4,6), 16);
+        const b = parseInt(hex.slice(6,8), 16);
+        return `rgba(${r},${g},${b},${a.toFixed(3)})`;
+      }
+      if (hex.length === 6) {
+        const r = parseInt(hex.slice(0,2), 16);
+        const g = parseInt(hex.slice(2,4), 16);
+        const b = parseInt(hex.slice(4,6), 16);
+        return `rgb(${r},${g},${b})`;
+      }
+      return null;
+    }
+
+    function borderToCss(border) {
+      const mapStyle = (s) => {
+        switch (s) {
+          case 'thin': return '1px solid';
+          case 'medium': return '2px solid';
+          case 'thick': return '3px solid';
+          case 'dashed': return '1px dashed';
+          case 'dotted': return '1px dotted';
+          case 'double': return '3px double';
+          default: return '1px solid';
+        }
+      };
+      const side = (o) => {
+        if (!o || !o.style) return null;
+        const widthStyle = mapStyle(o.style);
+        const col = argbToRgba(o.color?.argb) || 'rgba(0,0,0,0.35)';
+        return `${widthStyle} ${col}`;
+      };
+      return {
+        borderTop: side(border?.top),
+        borderRight: side(border?.right),
+        borderBottom: side(border?.bottom),
+        borderLeft: side(border?.left),
+      };
+    }
+
+    function alignmentToCss(al) {
+      if (!al) return {};
+      const css = {};
+      if (al.horizontal) css.textAlign = al.horizontal;
+      if (al.vertical) css.verticalAlign = al.vertical;
+      if (al.wrapText) css.whiteSpace = 'pre-wrap';
+      return css;
+    }
+
+    function fontToCss(font) {
+      if (!font) return {};
+      const css = {};
+      if (font.name) css.fontFamily = font.name;
+      if (font.size) css.fontSize = `${font.size}px`;
+      if (font.bold) css.fontWeight = '700';
+      if (font.italic) css.fontStyle = 'italic';
+      if (font.underline) css.textDecoration = 'underline';
+      if (font.color?.argb) {
+        const c = argbToRgba(font.color.argb);
+        if (c) css.color = c;
+      }
+      return css;
+    }
+
+    function fillToCss(fill) {
+      if (!fill) return {};
+      const css = {};
+      if (fill.type === 'pattern' && fill.pattern === 'solid' && fill.fgColor?.argb) {
+        const bg = argbToRgba(fill.fgColor.argb);
+        if (bg) css.backgroundColor = bg;
+      }
+      return css;
+    }
+
+    function getCellDisplay(cell) {
+      const v = cell.value;
+      if (v && typeof v === 'object' && v.hyperlink) return { text: v.text ?? String(v.hyperlink), href: v.hyperlink };
+      if (cell.hyperlink) {
+        const t = cell.text || (cell.value != null ? String(cell.value) : cell.hyperlink);
+        return { text: t, href: cell.hyperlink };
+      }
+      if (v && typeof v === 'object' && v.formula) {
+        const f = String(v.formula || '').trim();
+        // Obsługa formuły HYPERLINK(url, label) lub HYPERLINK(url; label)
+        if (/^HYPERLINK\s*\(/i.test(f)) {
+          const m = f.match(/^HYPERLINK\s*\(\s*"([^"]+)"\s*[,;]\s*"([^"]*)"\s*\)\s*$/i);
+          if (m) {
+            const href = m[1];
+            const label = m[2] || (v.result != null ? String(v.result) : href);
+            return { text: label, href };
+          }
+        }
+        return { text: (v.result ?? ''), href: null };
+      }
+      if (v && typeof v === 'object' && v.richText) return { text: v.richText.map(x => x.text).join(''), href: null };
+      if (v instanceof Date) return { text: v.toLocaleString(), href: null };
+      return { text: (v == null ? '' : String(v)), href: null };
+    }
+
+    function buildMergeMap(worksheet) {
+      const merges = worksheet._merges || {};
+      const masterMap = new Map();
+      const skip = new Set();
+
+      for (const key of Object.keys(merges)) {
+        const range = merges[key].range || key;
+        const [start, end] = range.split(':');
+        const s = ExcelJS.Cell.getAddress(start);
+        const e = ExcelJS.Cell.getAddress(end);
+
+        const rowspan = e.row - s.row + 1;
+        const colspan = e.col - s.col + 1;
+
+        const masterAddr = `${s.row}:${s.col}`;
+        masterMap.set(masterAddr, { rowspan, colspan });
+
+        for (let r = s.row; r <= e.row; r++) {
+          for (let c = s.col; c <= e.col; c++) {
+            const addr = `${r}:${c}`;
+            if (addr !== masterAddr) skip.add(addr);
+          }
+        }
+      }
+      return { masterMap, skip };
+    }
+
+    function isRowEmpty(ws, r, maxCol) {
+      for (let c = 1; c <= maxCol; c++) {
+        const cell = ws.getCell(r,c);
+        const disp = getCellDisplay(cell);
+        const hasStyle = cell.font || cell.fill || cell.border || cell.alignment || cell.numFmt;
+        if ((disp.text && disp.text !== '') || hasStyle) return false;
+      }
+      return true;
+    }
+
+    function findHeaderCol(ws, headerText) {
+      const max = Math.max(ws.columnCount || 0, ws.actualColumnCount || 0, 1);
+      for (let c = 1; c <= max; c++) {
+        const v = ws.getCell(1, c).value;
+        const t = (ws.getCell(1, c).text || (v == null ? '' : String(v))).trim();
+        if (t === headerText) return c;
+      }
+      return null;
+    }
+
+    function lastUsedHeaderCol(ws) {
+      // Szukamy ostatniej niepustej komórki w wierszu 1 (nagłówki)
+      const max = Math.max(ws.columnCount || 0, ws.actualColumnCount || 0, 1);
+      let last = 1;
+      for (let c = 1; c <= max; c++) {
+        const cell = ws.getCell(1, c);
+        const v = cell.value;
+        const t = (cell.text || (v == null ? '' : String(v))).trim();
+        const hasStyle = cell.font || cell.fill || cell.border || cell.alignment || cell.numFmt;
+        if (t !== '' || hasStyle) last = c;
+      }
+      return last;
+    }
+
+    function cloneCellStyle(srcCell, dstCell) {
+      // ExcelJS: style jest w objęcie "style" i też osobno font/fill/border/alignment/numFmt
+      try {
+        dstCell.font = srcCell.font ? JSON.parse(JSON.stringify(srcCell.font)) : undefined;
+        dstCell.fill = srcCell.fill ? JSON.parse(JSON.stringify(srcCell.fill)) : undefined;
+        dstCell.border = srcCell.border ? JSON.parse(JSON.stringify(srcCell.border)) : undefined;
+        dstCell.alignment = srcCell.alignment ? JSON.parse(JSON.stringify(srcCell.alignment)) : undefined;
+        dstCell.numFmt = srcCell.numFmt || undefined;
+      } catch (_) { }
+    }
+
+    function ensureCheckDateColumn(ws) {
+      // 1) jeśli już istnieje gdziekolwiek w nagłówkach – użyj jej
+      const existing = findHeaderCol(ws, CHECK_DATE_HEADER);
+      if (existing) return existing;
+
+      // 2) dodaj na końcu nagłówków (nie na końcu columnCount, który bywa "rozciągnięty")
+      const lastHeader = lastUsedHeaderCol(ws);
+      const newCol = lastHeader + 1;
+
+      const headerCell = ws.getCell(1, newCol);
+      headerCell.value = CHECK_DATE_HEADER;
+
+      // 3) skopiuj formatowanie nagłówka z poprzedniej kolumny (najczęściej zielony pasek)
+      const prevHeaderCell = ws.getCell(1, lastHeader);
+      cloneCellStyle(prevHeaderCell, headerCell);
+
+      // 4) szerokość kolumny
+      try { ws.getColumn(newCol).width = 14; } catch (_) {}
+
+      return newCol;
+    }
+
+    function getCheckedIdsFromSheet(ws) {
+      const checkCol = findHeaderCol(ws, CHECK_DATE_HEADER);
+      const idCol = findHeaderCol(ws, 'ID');
+      if (!checkCol || !idCol) return [];
+
+      const ids = [];
+      const maxCol = Math.max(ws.columnCount || 0, ws.actualColumnCount || 0, checkCol);
+
+      for (let r = 2; r <= ws.rowCount; r++) {
+        if (isRowEmpty(ws, r, maxCol)) continue;
+
+        const v = String(ws.getCell(r, checkCol).value ?? '').trim().toLowerCase();
+        if (v === CHECK_DATE_VALUE) {
+           const idText = (ws.getCell(r, idCol).text || String(ws.getCell(r, idCol).value ?? '')).trim();
+           if (idText && /^\d+$/.test(idText)) ids.push(parseInt(idText, 10));
+        }
+      }
+      return Array.from(new Set(ids));
+    }
+
+function buildTestCasesFromActiveSheet() {
+  if (activeFileIndex < 0) return [];
+  const fileObj = files[activeFileIndex];
+  const wb = fileObj?.wb;
+  const ws = wb?.worksheets?.[activeSheetIndex];
+  if (!ws) return [];
+
+  // Twoje realne nagłówki w XLSX to: "ID", "Case Title", ...
+  // Zachowujemy kompatybilność: najpierw próbujemy "Test Case ID", a jeśli nie ma -> "ID"
+  const colId = findHeaderCol(ws, 'Test Case ID') || findHeaderCol(ws, 'ID');
+  const colTitle = findHeaderCol(ws, 'Case Title') || findHeaderCol(ws, 'Title');
+  const colDept = findHeaderCol(ws, 'Department') || findHeaderCol(ws, 'Dept');
+  const colCat = findHeaderCol(ws, 'Assigning Category') || findHeaderCol(ws, 'Category');
+  const colTags = findHeaderCol(ws, 'Tags') || findHeaderCol(ws, 'Tag');
+
+  // jeśli nie ma ID i tytułu, nie ma sensu
+  if (!colId || !colTitle) return [];
+
+  const maxCol = Math.max(
+    ws.columnCount || 0,
+    ws.actualColumnCount || 0,
+    colTags || 0,
+    colDept || 0,
+    colCat || 0
+  );
+
+  const result = [];
+  for (let r = 2; r <= ws.rowCount; r++) {
+    if (isRowEmpty(ws, r, maxCol)) continue;
+
+    const getText = (c) => {
+      if (!c) return '';
+      const cell = ws.getCell(r, c);
+      const v = cell.text || (cell.value != null ? String(cell.value) : '');
+      return v.trim();
+    };
+
+    // UWAGA: nadal wysyłamy jako "test_case_id", bo backend tego oczekuje,
+    // ale w Twoim XLSX to po prostu "ID" (case lessons learned)
+    const test_case_id = getText(colId);
+    const case_title = getText(colTitle);
+    if (!test_case_id && !case_title) continue;
+
+    const department = colDept ? getText(colDept) : '';
+    const assigning_category = colCat ? getText(colCat) : '';
+    const tags = colTags ? getText(colTags) : '';
+
+    result.push({
+      test_case_id,
+      case_title,
+      department,
+      assigning_category,
+      tags
+    });
+  }
+
+  return result;
+}
+
+
+    function setActiveFile(index) {
+      activeFileIndex = index;
+      activeSheetIndex = 0;
+
+      [...$fileTabs.children].forEach((t,i) => t.classList.toggle('active', i === index));
+      [...$fileViews.children].forEach((v,i) => v.classList.toggle('active', i === index));
+
+      $saveXlsx.disabled = (activeFileIndex < 0);
+      $pushToJazz.disabled = (activeFileIndex < 0);
+      $aiAnalyze.disabled = (activeFileIndex < 0);
+
+
+      const f = files[activeFileIndex];
+      if (f) setActiveSheet(0);
+    }
+
+    function setActiveSheet(index) {
+      activeSheetIndex = index;
+      const f = files[activeFileIndex];
+      if (!f) return;
+
+      [...f.sheetTabsEl.children].forEach((t,i) => t.classList.toggle('active', i === index));
+      [...f.sheetsEl.children].forEach((s,i) => s.classList.toggle('active', i === index));
+    }
+
+    function updateDeleteButtonState(sheetDiv) {
+      const btn = sheetDiv.querySelector('[data-action="delete"]');
+      const anyChecked = !!sheetDiv.querySelector('tbody input[type="checkbox"][data-role="rowselect"]:checked');
+      btn.disabled = !anyChecked;
+    }
+
+    function selectAllInSheet(sheetDiv, checked) {
+      sheetDiv.querySelectorAll('tbody input[type="checkbox"][data-role="rowselect"]').forEach(cb => cb.checked = checked);
+      updateDeleteButtonState(sheetDiv);
+    }
+
+    function applyFilters(sheetDiv) {
+      const inputs = Array.from(sheetDiv.querySelectorAll('thead tr.filter-row input[data-col]'));
+      const filters = inputs.map(i => ({ col: parseInt(i.dataset.col,10), val: (i.value || '').trim().toLowerCase() }))
+                            .filter(x => x.val.length > 0);
+
+      const rows = Array.from(sheetDiv.querySelectorAll('tbody tr'));
+      rows.forEach(tr => {
+        let ok = true;
+        for (const f of filters) {
+          const td = tr.children[f.col];
+          const text = (td?.innerText || '').toLowerCase();
+          if (!text.includes(f.val)) { ok = false; break; }
+        }
+        tr.style.display = ok ? '' : 'none';
+      });
+      if (keywordFilterActive) {
+       // ponownie nałóż keyword filter (bo applyFilters zmienia display)
+        applyKeywordSearchToActiveSheet();
+      }
+    }
+
+    function clearFilters(sheetDiv) {
+      sheetDiv.querySelectorAll('thead tr.filter-row input').forEach(i => i.value = '');
+      applyFilters(sheetDiv);
+    }
+
+    function deleteSelectedRowsInSheet(fileIndex, sheetIndex, sheetDiv) {
+      const f = files[fileIndex];
+      if (!f) return;
+      const ws = f.wb.worksheets[sheetIndex];
+      if (!ws) return;
+
+      const selected = Array.from(sheetDiv.querySelectorAll('tbody tr'))
+        .map(tr => ({ cb: tr.querySelector('input[type="checkbox"][data-role="rowselect"]'), rowNo: parseInt(tr.dataset.row, 10) }))
+        .filter(x => x.cb && x.cb.checked && !Number.isNaN(x.rowNo))
+        .map(x => x.rowNo);
+
+      if (!selected.length) return;
+
+      selected.sort((a,b) => b - a);
+      for (const r of selected) ws.spliceRows(r, 1);
+
+      renderSheet(ws, sheetDiv, fileIndex, sheetIndex);
+
+      const msg = sheetDiv.querySelector('[data-role="msg"]');
+      msg.textContent = `Usunięto: ${selected.length}`;
+      setTimeout(() => { msg.textContent = ''; }, 2000);
+    }
+
+    // --- Helpers: wyznaczanie realnego maxCol (ExcelJS potrafi zaniżać / zawyżać columnCount) ---
+    function colLettersToNumber(letters) {
+      // "A" -> 1, "Z" -> 26, "AA" -> 27
+      let n = 0;
+      const s = String(letters || '').toUpperCase();
+      for (let i = 0; i < s.length; i++) {
+        const code = s.charCodeAt(i);
+        if (code < 65 || code > 90) continue;
+        n = n * 26 + (code - 64);
+      }
+      return n;
+    }
+
+    function maxColFromA1(a1) {
+      // np. "G12" -> 7
+      const m = String(a1 || '').match(/^([A-Za-z]+)(\d+)$/);
+      return m ? colLettersToNumber(m[1]) : 0;
+    }
+
+    function maxColFromRange(range) {
+      // np. "A1:G87" -> 7
+      const parts = String(range || '').split(':');
+      if (parts.length === 1) return maxColFromA1(parts[0]);
+      return Math.max(maxColFromA1(parts[0]), maxColFromA1(parts[1]));
+    }
+
+    function getMaxColFromDimensions(ws) {
+      try {
+        const d = ws?.dimensions;
+        if (!d) return 0;
+        // ExcelJS bywa: {top,left,bottom,right}
+        if (typeof d === 'object' && (d.right || d._right)) {
+          return Number(d.right || d._right) || 0;
+        }
+        // albo string: "A1:G87"
+        if (typeof d === 'string') {
+          return maxColFromRange(d);
+        }
+      } catch (e) {}
+      return 0;
+    }
+
+    function getMaxColFromMerges(ws) {
+      // Merges mogą sięgać dalej niż "widzi" columnCount
+      try {
+        const merges = ws?.model?.merges || ws?._merges;
+        if (!merges) return 0;
+        if (Array.isArray(merges)) {
+          let m = 0;
+          for (const r of merges) m = Math.max(m, maxColFromRange(r));
+          return m;
+        }
+        // _merges bywa Mapem: key = master address, value = range string
+        if (typeof merges === 'object') {
+          let m = 0;
+          for (const k of Object.keys(merges)) {
+            const v = merges[k];
+            m = Math.max(m, maxColFromRange(v || k));
+          }
+          return m;
+        }
+      } catch (e) {}
+      return 0;
+    }
+
+    function calcMaxCol(ws, checkCol) {
+      // 1) spróbuj "prawdziwego" zakresu z dimensions
+      const fromDim = getMaxColFromDimensions(ws);
+      // 2) dobij merges
+      const fromMerges = getMaxColFromMerges(ws);
+      // 3) awaryjnie bazuj na tym co ExcelJS zna
+      const fallback = Math.max(Number(ws?.actualColumnCount || 0), Number(ws?.columnCount || 0));
+      return Math.max(checkCol || 0, fromDim || 0, fromMerges || 0, fallback || 0);
+    }
+
+    function renderSheet(ws, sheetDiv, fileIndex, sheetIndex) {
+      const oldWrap = sheetDiv.querySelector('.grid-wrap');
+      if (oldWrap) oldWrap.remove();
+
+      const checkCol = ensureCheckDateColumn(ws);
+      const idCol = findHeaderCol(ws, 'Test Case ID') || findHeaderCol(ws, 'ID');
+
+      const wrap = document.createElement('div');
+      wrap.className = 'grid-wrap';
+
+      const table = document.createElement('table');
+      table.className = 'grid';
+
+      // Ustal szerokości kolumn globalnie (colgroup), żeby działały zarówno dla <th> jak i <td>
+      const colgroup = document.createElement('colgroup');
+      const colSel = document.createElement('col');
+      colSel.style.width = '44px';
+      colSel.style.maxWidth = '44px';
+      colgroup.appendChild(colSel);
+
+      const maxRow = ws.rowCount || 0;
+      // uwaga: maxCol bierzemy po ensureCheckDateColumn, żeby uwzględnić nową kolumnę
+      // i wyliczamy po realnej treści (a nie po stylach/columnCount)
+      const maxCol = calcMaxCol(ws, checkCol);
+
+      const { masterMap, skip } = buildMergeMap(ws);
+
+      // --- Dopasowanie szerokości do widoku strony (bez poziomego scrolla) ---
+      // Skaluje wszystkie kolumny (w tym Check Date), aby zawsze mieściły się w szerokości.
+      const colPx = [];
+      const basePx = [];
+      const minPx = [];
+      for (let c = 1; c <= maxCol; c++) {
+        const col = ws.getColumn(c);
+        const w = col?.width;
+        const base = w ? Math.max(26, Math.round(w * 7)) : 80;
+        basePx[c] = base;
+        minPx[c] = (c === checkCol) ? 100 : 12;
+      }
+
+      const avail = Math.max(320, Math.floor(sheetDiv.getBoundingClientRect().width || window.innerWidth || 1200) - 24);
+      const fixedLeft = 44; // kolumna zaznaczania wierszy
+      const available = Math.max(200, avail - fixedLeft);
+
+      let totalBase = 0;
+      let totalMin = 0;
+      for (let c = 1; c <= maxCol; c++) {
+        totalBase += (basePx[c] || 80);
+        totalMin += (minPx[c] || 10);
+      }
+
+      if (totalMin >= available) {
+        // Awaryjnie: gdy jest bardzo dużo kolumn, rozdziel równo, ale zachowaj priorytet Check Date
+        const fallback = Math.max(10, Math.floor(available / Math.max(1, maxCol)));
+        for (let c = 1; c <= maxCol; c++) {
+          colPx[c] = (c === checkCol) ? Math.max(90, fallback) : fallback;
+        }
+      } else {
+        const scale = totalBase > 0 ? (available / totalBase) : 1;
+        for (let c = 1; c <= maxCol; c++) {
+          colPx[c] = Math.max(minPx[c] || 10, Math.floor((basePx[c] || 80) * scale));
+        }
+
+        const totalNow = () => {
+          let t = fixedLeft;
+          for (let c = 1; c <= maxCol; c++) t += (colPx[c] || 0);
+          return t;
+        };
+        let t = totalNow();
+
+        if (t > avail) {
+          const excess = t - avail;
+          let capacity = 0;
+          for (let c = 1; c <= maxCol; c++) {
+            capacity += Math.max(0, (colPx[c] || 0) - (minPx[c] || 10));
+          }
+          const ratio = capacity > 0 ? Math.min(1, excess / capacity) : 1;
+          for (let c = 1; c <= maxCol; c++) {
+            const can = Math.max(0, (colPx[c] || 0) - (minPx[c] || 10));
+            colPx[c] = Math.max(minPx[c] || 10, (colPx[c] || 0) - Math.ceil(can * ratio));
+          }
+        }
+      }
+
+      // Wypełnij colgroup szerokościami obliczonymi powyżej
+      for (let c = 1; c <= maxCol; c++) {
+        const colEl = document.createElement('col');
+        const wpx = (colPx[c] || 80);
+        colEl.style.width = `${wpx}px`;
+        colEl.style.maxWidth = `${wpx}px`;
+        colgroup.appendChild(colEl);
+      }
+      table.appendChild(colgroup);
+
+      let lastNonEmpty = maxRow;
+      while (lastNonEmpty > 1 && isRowEmpty(ws, lastNonEmpty, maxCol)) lastNonEmpty--;
+
+      const thead = document.createElement('thead');
+      const tbody = document.createElement('tbody');
+
+      const headerTr = document.createElement('tr');
+
+      const thChk = document.createElement('th');
+      thChk.className = 'chkcol';
+      const headCb = document.createElement('input');
+      headCb.type = 'checkbox';
+      headCb.title = 'Zaznacz wszystko w arkuszu';
+      headCb.addEventListener('change', () => selectAllInSheet(sheetDiv, headCb.checked));
+      thChk.appendChild(headCb);
+      headerTr.appendChild(thChk);
+
+      for (let c = 1; c <= maxCol; c++) {
+        const addrKey = `1:${c}`;
+        if (skip.has(addrKey)) continue;
+
+        const cell = ws.getCell(1, c);
+        const disp = getCellDisplay(cell);
+
+        const th = document.createElement('th');
+        if (c === checkCol) th.classList.add('checkdatecol');
+
+        const m = masterMap.get(addrKey);
+        if (m) { if (m.colspan > 1) th.colSpan = m.colspan; if (m.rowspan > 1) th.rowSpan = m.rowspan; }
+
+        th.textContent = disp.text ?? '';
+
+        const css = { ...fontToCss(cell.font), ...fillToCss(cell.fill), ...alignmentToCss(cell.alignment) };
+        const b = borderToCss(cell.border);
+        if (b.borderTop) css.borderTop = b.borderTop;
+        if (b.borderRight) css.borderRight = b.borderRight;
+        if (b.borderBottom) css.borderBottom = b.borderBottom;
+        if (b.borderLeft) css.borderLeft = b.borderLeft;
+        Object.assign(th.style, css);
+
+        headerTr.appendChild(th);
+      }
+      thead.appendChild(headerTr);
+
+
+      const filterTr = document.createElement('tr');
+      filterTr.className = 'filter-row';
+
+      const f0 = document.createElement('th');
+      f0.className = 'chkcol';
+      filterTr.appendChild(f0);
+
+      let tableColIndex = 1;
+      for (let c = 1; c <= maxCol; c++) {
+        const addrKey = `1:${c}`;
+        if (skip.has(addrKey)) continue;
+
+        const th = document.createElement('th');
+        th.style.width = `${colPx[c] || 80}px`;
+        th.style.maxWidth = `${colPx[c] || 80}px`;
+        if (c === checkCol) th.classList.add('checkdatecol');
+
+        if (c !== checkCol) {
+          const input = document.createElement('input');
+          input.className = 'filter-input';
+          input.type = 'text';
+          input.placeholder = 'filtr...';
+          input.dataset.col = String(tableColIndex);
+          input.addEventListener('input', () => applyFilters(sheetDiv));
+          th.appendChild(input);
+        }
+
+        filterTr.appendChild(th);
+        tableColIndex++;
+      }
+      thead.appendChild(filterTr);
+
+      for (let r = 2; r <= lastNonEmpty; r++) {
+        const rowEl = document.createElement('tr');
+        rowEl.dataset.row = String(r);
+
+        if (idCol) {
+          const idCell = ws.getCell(r, idCol);
+          const idText = (idCell.text || (idCell.value != null ? String(idCell.value) : '')).trim();
+          if (idText) rowEl.dataset.caseId = idText;
+        }
+
+        const tdChk = document.createElement('td');
+        tdChk.className = 'chkcol';
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.dataset.role = 'rowselect';
+        cb.addEventListener('change', () => updateDeleteButtonState(sheetDiv));
+        tdChk.appendChild(cb);
+        rowEl.appendChild(tdChk);
+
+        for (let c = 1; c <= maxCol; c++) {
+          const addrKey = `${r}:${c}`;
+          if (skip.has(addrKey)) continue;
+
+          const cell = ws.getCell(r, c);
+          const disp = getCellDisplay(cell);
+
+          const td = document.createElement('td');
+          td.style.width = `${colPx[c] || 80}px`;
+          td.style.maxWidth = `${colPx[c] || 80}px`;
+          if (c === checkCol) td.classList.add('checkdatecol');
+
+          const m = masterMap.get(addrKey);
+          if (m) { if (m.colspan > 1) td.colSpan = m.colspan; if (m.rowspan > 1) td.rowSpan = m.rowspan; }
+
+          if (c === checkCol) {
+            const chk = document.createElement('input');
+            chk.type = 'checkbox';
+            chk.dataset.role = 'checkdate';
+            const current = String(cell.value ?? '').trim().toLowerCase();
+            chk.checked = (current === CHECK_DATE_VALUE);
+            chk.addEventListener('change', () => {
+              ws.getCell(r, checkCol).value = chk.checked ? CHECK_DATE_VALUE : '';
+            });
+            td.appendChild(chk);
+          } else if (c === idCol) {
+            const idText = (disp.text ?? '').toString().trim();
+            if (idText) {
+              const a = document.createElement('a');
+              a.className = 'cell-link';
+              a.href = buildJazzWorkItemUrl(idText);
+              a.target = '_blank';
+              a.rel = 'noopener noreferrer';
+              a.textContent = idText;
+              td.appendChild(a);
+            } else {
+              td.textContent = disp.text ?? '';
+            }
+          } else if (disp.href) {
+            const a = document.createElement('a');
+            a.className = 'cell-link';
+            a.href = disp.href;
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+            a.textContent = disp.text ?? '';
+            td.appendChild(a);
+          } else {
+            td.textContent = disp.text ?? '';
+          }
+
+          const css = { ...fontToCss(cell.font), ...fillToCss(cell.fill), ...alignmentToCss(cell.alignment) };
+          const b = borderToCss(cell.border);
+          if (b.borderTop) css.borderTop = b.borderTop;
+          if (b.borderRight) css.borderRight = b.borderRight;
+          if (b.borderBottom) css.borderBottom = b.borderBottom;
+          if (b.borderLeft) css.borderLeft = b.borderLeft;
+
+          const hasStyle = cell.font || cell.fill || cell.border || cell.alignment || cell.numFmt;
+          const plainText = (disp.text ?? '');
+          if (c !== checkCol && !plainText && !hasStyle) td.classList.add('empty');
+
+          Object.assign(td.style, css);
+          rowEl.appendChild(td);
+        }
+
+        tbody.appendChild(rowEl);
+      }
+
+      table.appendChild(thead);
+      table.appendChild(tbody);
+      wrap.appendChild(table);
+      sheetDiv.appendChild(wrap);
+
+      const headCb2 = sheetDiv.querySelector('thead input[type="checkbox"]');
+      if (headCb2) headCb2.checked = false;
+      updateDeleteButtonState(sheetDiv);
+      applyFilters(sheetDiv);
+    }
+
+    async function addWorkbookFromArrayBuffer(arrayBuffer, fileName) {
+      const wb = new ExcelJS.Workbook();
+      await wb.xlsx.load(arrayBuffer);
+
+      wb.worksheets.forEach(ws => ensureCheckDateColumn(ws));
+
+      const fileIndex = files.length;
+      const fileObj = { name: fileName, wb };
+      files.push(fileObj);
+
+      const fileTab = document.createElement('div');
+      fileTab.className = 'tab' + (fileIndex === 0 ? ' active' : '');
+      fileTab.textContent = fileName;
+      fileTab.addEventListener('click', () => setActiveFile(fileIndex));
+      $fileTabs.appendChild(fileTab);
+
+      const fileView = document.createElement('div');
+      fileView.className = 'fileview' + (fileIndex === 0 ? ' active' : '');
+
+      const sheetLabel = document.createElement('div');
+      sheetLabel.className = 'section-label';
+      sheetLabel.textContent = 'Arkusze';
+      fileView.appendChild(sheetLabel);
+
+      const sheetTabs = document.createElement('div');
+      sheetTabs.className = 'tabs';
+      fileView.appendChild(sheetTabs);
+
+      const sheets = document.createElement('div');
+      fileView.appendChild(sheets);
+
+      fileObj.fileViewEl = fileView;
+      fileObj.sheetTabsEl = sheetTabs;
+      fileObj.sheetsEl = sheets;
+
+      wb.worksheets.forEach((ws, sheetIdx) => {
+        const tab = document.createElement('div');
+        tab.className = 'tab' + (sheetIdx === 0 ? ' active' : '');
+        tab.textContent = ws.name;
+        tab.addEventListener('click', () => setActiveSheet(sheetIdx));
+        sheetTabs.appendChild(tab);
+
+        const sheetDiv = document.createElement('div');
+        sheetDiv.className = 'sheet' + (sheetIdx === 0 ? ' active' : '');
+
+        const title = document.createElement('div');
+        title.className = 'sheet-title';
+
+        const titleText = document.createElement('span');
+        titleText.textContent = `${fileName} • Arkusz: ${ws.name}`;
+        title.appendChild(titleText);
+
+        const btnClear = document.createElement('button');
+        btnClear.className = 'btn';
+        btnClear.type = 'button';
+        btnClear.textContent = 'Wyczyść filtry';
+        btnClear.addEventListener('click', () => clearFilters(sheetDiv));
+        title.appendChild(btnClear);
+
+        const btnDelete = document.createElement('button');
+        btnDelete.className = 'btn danger';
+        btnDelete.type = 'button';
+        btnDelete.textContent = 'Usuń zaznaczone wiersze';
+        btnDelete.dataset.action = 'delete';
+        btnDelete.disabled = true;
+        btnDelete.addEventListener('click', () => deleteSelectedRowsInSheet(fileIndex, sheetIdx, sheetDiv));
+        title.appendChild(btnDelete);
+
+        const btnPushInline = document.createElement('button');
+        btnPushInline.className = 'btn';
+        btnPushInline.type = 'button';
+        btnPushInline.textContent = 'Ustaw Check Date w Jazz (zaznaczone)';
+        btnPushInline.addEventListener('click', () => $pushToJazz.click());
+        title.appendChild(btnPushInline);
+
+        const msg = document.createElement('span');
+        msg.className = 'msg';
+        msg.dataset.role = 'msg';
+        title.appendChild(msg);
+
+        sheetDiv.appendChild(title);
+
+        try {
+          renderSheet(ws, sheetDiv, fileIndex, sheetIdx);
+        } catch (e) {
+          console.error("Render error", ws?.name, e);
+          const err = document.createElement("div");
+          err.style.padding = "12px";
+          err.style.color = "#b00020";
+          err.textContent = "Błąd renderowania arkusza: " + (e && e.message ? e.message : String(e));
+          sheetDiv.appendChild(err);
+        }
+        sheets.appendChild(sheetDiv);
+      });
+
+      $fileViews.appendChild(fileView);
+
+    if (fileIndex === 0) {
+       activeFileIndex = 0;
+       activeSheetIndex = 0;
+       $saveXlsx.disabled = false;
+       $pushToJazz.disabled = false;
+       $aiAnalyze.disabled = false;
+    } else {
+       $saveXlsx.disabled = (activeFileIndex < 0);
+       $pushToJazz.disabled = (activeFileIndex < 0);
+       $aiAnalyze.disabled = (activeFileIndex < 0);
+    }
+  }
+
+  function decodeCsvBuffer(arrayBuffer) {
+  const u8 = new Uint8Array(arrayBuffer);
+
+  // BOM detection
+  if (u8.length >= 2 && u8[0] === 0xFF && u8[1] === 0xFE) {
+    return new TextDecoder('utf-16le').decode(u8);
+  }
+  if (u8.length >= 3 && u8[0] === 0xEF && u8[1] === 0xBB && u8[2] === 0xBF) {
+    return new TextDecoder('utf-8').decode(u8);
+  }
+  return new TextDecoder('utf-8').decode(u8);
+}
+
+function detectDelimiter(firstLine) {
+  if (firstLine.includes('\t')) return '\t';
+  if (firstLine.includes(';')) return ';';
+  if (firstLine.includes(',')) return ',';
+  return ';'; // fallback
+}
+
+// Prosty parser linii z obsługą cudzysłowów ("" jako escape)
+function parseDelimitedLine(line, delim) {
+  const out = [];
+  let cur = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+
+    if (ch === '"') {
+      // escape: "" -> "
+      if (inQuotes && line[i + 1] === '"') {
+        cur += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+      continue;
+    }
+
+    if (ch === delim && !inQuotes) {
+      out.push(cur.trim());
+      cur = '';
+      continue;
+    }
+
+    cur += ch;
+  }
+  out.push(cur.trim());
+
+  // zdejmij ewentualne otaczające cudzysłowy (nagłówki/komórki)
+  return out.map(v => {
+    const s = String(v ?? '').trim();
+    if (s.startsWith('"') && s.endsWith('"') && s.length >= 2) return s.slice(1, -1).trim();
+    return s;
+  });
+}
+
+async function addWorkbookFromCsvBuffer(arrayBuffer, fileName) {
+  const csvText = decodeCsvBuffer(arrayBuffer);
+
+  // usuń puste linie na końcu i zachowaj linie
+  const lines = csvText.split(/\r?\n/).filter(l => l.trim().length > 0);
+  if (!lines.length) return;
+
+  const delim = detectDelimiter(lines[0]);
+
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet('CSV');
+
+  for (const line of lines) {
+    const cells = parseDelimitedLine(line, delim);
+    ws.addRow(cells);
+  }
+
+  // dalej używasz Twojej istniejącej logiki renderowania XLSX
+  const outBuf = await wb.xlsx.writeBuffer();
+  await addWorkbookFromArrayBuffer(outBuf, fileName.replace(/\.csv$/i, '.xlsx'));
+}
+
+
+
+    async function saveModifiedXlsxActiveFile() {
+      if (activeFileIndex < 0) return;
+      const f = files[activeFileIndex];
+      if (!f) return;
+
+      // upewnij się, że kolumna istnieje na wszystkich arkuszach
+      f.wb.worksheets.forEach(ws => ensureCheckDateColumn(ws));
+
+      const buf = await f.wb.xlsx.writeBuffer();
+      const base = (f.name || 'plik.xlsx').replace(/\.xlsx$/i,'');
+      const outName = base + '_modified.xlsx';
+
+      const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = outName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    $saveXlsx.addEventListener('click', saveModifiedXlsxActiveFile);
+
+        // Pobranie opisu work itemu (bez zmiany logiki viewer-a)
+    $loadWiDesc.addEventListener('click', async () => {
+      try {
+        const wid = parseInt($wiId.value, 10);
+        if (!wid || wid <= 0) return alert('Podaj numer work itemu');
+
+        $wiDescription.textContent = 'Pobieranie...';
+
+        const base = JAZZ_BASE_URL; // stała już istnieje w skrypcie
+        const creds = await askCredentials('');
+        if (!creds) {
+          $wiDescription.textContent = '';
+          return;
+        }
+
+        const { user, password } = creds;
+
+        const resp = await fetch('/api/workitem_description', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ base, user, password, wid })
+        });
+
+        const data = await resp.json().catch(() => ({}));
+
+        if (!resp.ok || !data.ok) {
+          $wiDescription.textContent = 'Błąd: ' + (data?.error || ('HTTP ' + resp.status));
+          return;
+        }
+
+        const desc = data.description || '';
+
+        if (desc) {
+          // Świadomie używamy innerHTML: opis pochodzi z zaufanego źródła (IBM Jazz)
+          // i zawiera tylko formatowanie (np. ol/li/p/b/i), bez skryptów.
+          $wiDescription.innerHTML = `<div><strong>Opis:</strong></div>${desc}`;
+        } else {
+          $wiDescription.textContent = '(brak opisu)';
+        }
+      } catch (e) {
+        $wiDescription.textContent = 'Błąd: ' + e;
+      }
+    });
+
+
+// ===== AI: analiza pokrycia testow (Responses API) =====
+$aiAnalyze.addEventListener('click', async () => {
+  try {
+    const testCases = buildTestCasesFromActiveSheet();
+    if (!testCases.length) {
+      alert('Brak casow w aktywnym arkuszu (kolumny: Test Case ID, Case Title, Department, Assigning Category, Tags).');
+      return;
+    }
+
+    const wiDescText = ($wiDescription.innerText || '').trim();
+    if (!wiDescText) {
+      alert('Brak opisu work itemu. Najpierw pobierz opis WI z Jazz.');
+      return;
+    }
+
+    openAiModal();
+    setAiStatus('Analiza w toku...');
+    renderAiResult('');
+
+    const body = {
+      wi_description: wiDescText,
+      test_cases: testCases
+    };
+
+    const resp = await fetch('/api/ai_analyze_test_coverage', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok || !data.ok) {
+      setAiStatus('Blad analizy AI: ' + (data.error || ('HTTP ' + resp.status)));
+      renderAiResult(data.result_markdown || '');
+      return;
+    }
+
+    setAiStatus('Analiza zakonczona.');
+    renderAiResult(data.result_markdown || '');
+  } catch (e) {
+    setAiStatus('Blad analizy AI: ' + e);
+    renderAiResult('');
+  }
+});
+
+
+
+    $pushToJazz.addEventListener('click', async () => {
+     try {
+       if (activeFileIndex < 0) return alert('Najpierw wczytaj plik XLSX.');
+       const wb = files[activeFileIndex]?.wb;
+       const ws = wb?.worksheets?.[activeSheetIndex];
+       if (!ws) return alert('Brak aktywnego arkusza.');
+
+       const ids = getCheckedIdsFromSheet(ws);
+       if (!ids.length) return alert('Brak zaznaczonych wierszy w kolumnie Check Date.');
+
+      const base = JAZZ_BASE_URL;
+
+      const creds = await askCredentials('');
+      if (!creds) return;
+
+      const { user, password } = creds;
+
+
+       const resp = await fetch('/api/set_check_date', {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify({ base, user, password, ids })
+       });
+
+       const data = await resp.json();
+       if (!resp.ok || !data.ok) {
+         return alert('Błąd: ' + (data?.error || ('HTTP ' + resp.status)));
+       }
+
+       const okCount = data.results.filter(x => x.status === 'OK').length;
+       const failCount = data.results.length - okCount;
+       alert(`Ustawiono Check Date dla ${okCount} tasków. Błędy: ${failCount}. Wartość: ${data.applied_value}`);
+       console.log('Jazz update result:', data);
+     } catch (e) {
+       alert('Błąd: ' + e);
+     }
+   });
+
+
+    $file.addEventListener('change', async (e) => {
+      const list = Array.from(e.target.files || []);
+      for (const f of list) {
+        try {
+          const ext = f.name.toLowerCase().split('.').pop();
+
+          if (ext === 'xlsx') {
+            const buf = await f.arrayBuffer();
+            await addWorkbookFromArrayBuffer(buf, f.name);
+          }
+          else if (ext === 'csv') {
+            const buf = await f.arrayBuffer();
+            await addWorkbookFromCsvBuffer(buf, f.name);
+          }
+          else {
+            alert('Nieobsługiwany format pliku: ' + ext);
+          }
+
+        } catch (_) { }
+      }
+      $file.value = '';
+      if (activeFileIndex >= 0) setActiveFile(activeFileIndex);
+      else if (files.length) setActiveFile(0);
+    });
+
+    if ($loadExample) {
+      $loadExample.addEventListener('click', async () => {
+        try {
+        const exampleName = 'Dopasowane_LL_ID_CaseTitle_Tags(4).xlsx';
+        const res = await fetch(exampleName);
+        if (!res.ok) throw new Error('fetch failed');
+        const buf = await res.arrayBuffer();
+        await addWorkbookFromArrayBuffer(buf, exampleName);
+        if (activeFileIndex < 0) setActiveFile(0);
+      } catch (_) { }
+      });
+    }
+
+    $saveXlsx.disabled = (activeFileIndex < 0);
+    $pushToJazz.disabled = (activeFileIndex < 0);
+    $aiAnalyze.disabled = (activeFileIndex < 0);
+
+  </script>
+</body>
+</html>

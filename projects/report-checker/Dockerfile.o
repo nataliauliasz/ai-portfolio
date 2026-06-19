@@ -1,0 +1,22 @@
+# Użyj oficjalnego obrazu Pythona jako bazowego
+FROM python:3.10-slim
+
+# Ustaw katalog roboczy w kontenerze
+WORKDIR /app
+
+# Skopiuj pliki projektu do kontenera
+COPY . /app
+
+# Zainstaluj wymagane biblioteki
+RUN pip install --no-cache-dir -r requirements.txt
+RUN apt-get update && apt-get install -y libgl1-mesa-glx
+RUN apt-get update && \
+    apt-get install -y \
+      libgl1-mesa-glx \
+      libglib2.0-0 
+
+# Eksponuj port aplikacji
+EXPOSE 5021
+
+# Komenda uruchamiająca aplikację
+CMD ["python", "app.py"]

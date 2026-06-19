@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Charging Log Viewer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">Charging Log Viewer</p>
+          <h1>{{ table_name }}</h1>
+        </div>
+      </section>
+
+      <section class="panel">
+        <nav class="tab-bar" aria-label="Widoki aplikacji">
+          <a
+            class="tab-link {% if active_tab == 'analysis' %}active{% endif %}"
+            href="{{ url_for('index', tab='analysis', page=page, page_size=page_size, q=q, phone=phone, project_number=project_number, software_version=software_version, position=position, classification=classification, test_type=test_type, sample=sample, defect_id=defect_id, dual_charging=dual_charging, event_ts_from=event_ts_from, event_ts_to=event_ts_to, inserted_at_from=inserted_at_from, inserted_at_to=inserted_at_to, sort=sort_by, dir=sort_dir) }}"
+            data-tab-target="analysis"
+            aria-selected="{{ 'true' if active_tab == 'analysis' else 'false' }}"
+            >
+              Analizy
+            </a>
+          <a
+            class="tab-link {% if active_tab == 'ranking' %}active{% endif %}"
+            href="{{ url_for('index', tab='ranking', page=page, page_size=page_size, q=q, phone=phone, project_number=project_number, software_version=software_version, position=position, classification=classification, test_type=test_type, sample=sample, defect_id=defect_id, dual_charging=dual_charging, event_ts_from=event_ts_from, event_ts_to=event_ts_to, inserted_at_from=inserted_at_from, inserted_at_to=inserted_at_to, sort=sort_by, dir=sort_dir) }}"
+            data-tab-target="ranking"
+            aria-selected="{{ 'true' if active_tab == 'ranking' else 'false' }}"
+          >
+            Ranking
+          </a>
+        </nav>
+
+        {% if error_message %}
+          <div class="error">{{ error_message }}</div>
+        {% endif %}
+
+        <section
+          class="tab-panel {% if active_tab == 'analysis' %}active{% endif %}"
+          data-tab-panel="analysis"
+          {% if active_tab != "analysis" %}hidden{% endif %}
+        >
+          <form method="get" action="{{ url_for('index') }}" class="toolbar">
+            <input type="hidden" name="tab" value="analysis">
+            <input type="hidden" name="run_analysis" value="1">
+            <label class="toolbar-field-phone">
+              Phone
+              <select name="phone">
+                <option value="">Wszystkie</option>
+                {% for option in phone_options %}
+                  <option value="{{ option }}" {% if phone == option %}selected{% endif %}>{{ option }}</option>
+                {% endfor %}
+              </select>
+            </label>
+            <label class="toolbar-field-project-number">
+              Project_number
+              <select name="project_number">
+                <option value="">Wszystkie</option>
+                {% for option in project_number_options %}
+                  <option value="{{ option }}" {% if project_number == option %}selected{% endif %}>{{ option }}</option>
+                {% endfor %}
+              </select>
+            </label>
+            <label>
+              Software-version
+              <select name="software_version">
+                <option value="">Wszystkie</option>
+                {% for option in software_version_options %}
+                  <option value="{{ option }}" {% if software_version == option %}selected{% endif %}>{{ option }}</option>
+                {% endfor %}
+              </select>
+            </label>
+            <label>
+              event_ts od
+              <input type="date" name="event_ts_from" value="{{ event_ts_from }}">
+            </label>
+            <label>
+              event_ts do
+              <input type="date" name="event_ts_to" value="{{ event_ts_to }}">
+            </label>
+            <label>
+              inserted_at od
+              <input type="date" name="inserted_at_from" value="{{ inserted_at_from }}">
+            </label>
+            <label>
+              inserted_at do
+              <input type="date" name="inserted_at_to" value="{{ inserted_at_to }}">
+            </label>
+            <input type="hidden" name="page" value="1">
+            <div class="toolbar-actions">
+              <button type="submit">Analizuj</button>
+              <a class="secondary-button" href="{{ url_for('index', tab='analysis') }}">Wyczysc</a>
+            </div>
+          </form>
+
+          <div
+            data-analysis-panel
+            data-analysis-active="{{ 'true' if active_tab == 'analysis' else 'false' }}"
+            data-analysis-autostart="{{ 'true' if analysis_autostart else 'false' }}"
+            data-analysis-url="{{ analysis_status_url }}"
+            data-analysis-poll-interval-ms="{{ analysis_poll_interval_ms }}"
+          >
+            <section class="analysis analysis-loading-state" data-analysis-loading {% if analysis or analysis_error_message %}hidden{% endif %}>
+              <div class="analysis-header">
+                <div>
+                  <p class="eyebrow">Analiza danych ladowania</p>
+                  <h2>{% if analysis or analysis_error_message %}Analiza gotowa{% elif run_analysis_requested %}Przygotowywanie analizy{% else %}Analiza gotowa do uruchomienia{% endif %}</h2>
+                  <p class="subtle" data-analysis-status-copy>
+                    {% if analysis or analysis_error_message %}
+                      Wynik analizy dla biezacych filtrow jest juz gotowy.
+                    {% elif run_analysis_requested %}
+                      Liczenie odbywa sie w tle. Widok pojawi sie automatycznie po zakonczeniu obliczen.
+                    {% else %}
+                      Ustaw filtry i kliknij Analizuj, aby uruchomic analize dla biezacego zakresu.
+                    {% endif %}
+                  </p>
+                </div>
+                <div class="analysis-actions">
+                  <button type="button" class="secondary-button analysis-retry-button" data-analysis-retry hidden>
+                    Sprobuj ponownie
+                  </button>
+                </div>
+              </div>
+
+              <div class="analysis-loading-card">
+                <span class="analysis-spinner" aria-hidden="true" {% if not run_analysis_requested %}hidden{% endif %}></span>
+                <div>
+                  <strong>{% if run_analysis_requested %}Liczenie analizy trwa{% else %}Analiza nie zostala jeszcze uruchomiona{% endif %}</strong>
+                  <p class="subtle">
+                    {% if run_analysis_requested %}
+                      Zakladka laduje sie od razu, a pelny wynik zostanie podstawiony bez odswiezania strony.
+                    {% else %}
+                      Otwarcie zakladki nie uruchamia obliczen automatycznie.
+                    {% endif %}
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            <div data-analysis-content {% if not analysis and not analysis_error_message %}hidden{% endif %}>
+              {% if analysis or analysis_error_message %}
+                {% include "_analysis_content.html" %}
+              {% endif %}
+            </div>
+          </div>
+        </section>
+
+        <section
+          class="tab-panel {% if active_tab == 'ranking' %}active{% endif %}"
+          data-tab-panel="ranking"
+          {% if active_tab != "ranking" %}hidden{% endif %}
+        >
+          {% include "_ranking_content.html" %}
+        </section>
+      </section>
+    </main>
+    <script src="{{ url_for('static', filename='analysis.js') }}"></script>
+  </body>
+</html>

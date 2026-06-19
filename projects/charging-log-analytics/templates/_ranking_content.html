@@ -1,0 +1,178 @@
+{% if ranking %}
+  <section class="analysis ranking-view">
+    <div class="analysis-header">
+      <div>
+        <p class="eyebrow">Nocny ranking niezawodnosci</p>
+        <h2>{{ ranking.scope_title }}</h2>
+        <p class="subtle">{{ ranking.scope_subtitle }}</p>
+      </div>
+      <div class="analysis-actions">
+        <div class="analysis-note">
+          Snapshot: {{ ranking.snapshot_generated_at }} ({{ ranking.snapshot_timezone }})
+        </div>
+        <div class="analysis-note">
+          Zrodlo: {{ ranking.source_row_count }} {{ ranking.source_row_count_label or 'rekordow zrodla' }} / {{ ranking.session_count }} sesji
+        </div>
+        {% if ranking.snapshot_status_message %}
+          <div class="analysis-note">
+            {{ ranking.snapshot_status_message }}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if ranking.leader_cards %}
+      <div class="analysis-grid">
+        {% for card in ranking.leader_cards %}
+          <article class="metric-card">
+            <span class="metric-label">{{ card.label }}</span>
+            <strong>{{ card.value }}</strong>
+            <p>{{ card.help }}</p>
+          </article>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    {% if ranking.score_formula %}
+      <article class="analysis-block ranking-score-note">
+        <div class="ranking-score-header">
+          <h3>Jak czytac score</h3>
+          {% if ranking.score_help %}
+            <details class="score-help-popover">
+              <summary class="score-help-trigger" aria-label="Pokaz dokladne wyjasnienie score">?</summary>
+              <div class="score-help-bubble">
+                <p class="score-help-lead">{{ ranking.score_help.intro }}</p>
+                <p><strong>Wzor:</strong> {{ ranking.score_help.formula }}</p>
+
+                <div class="score-help-section">
+                  <h4>Co wchodzi do score</h4>
+                  <ul class="score-help-list">
+                    {% for item in ranking.score_help.components %}
+                      <li><strong>{{ item.label }}:</strong> {{ item.details }}</li>
+                    {% endfor %}
+                  </ul>
+                </div>
+
+                <div class="score-help-section">
+                  <h4>Skad biora sie verdicty</h4>
+                  <ul class="score-help-list">
+                    {% for item in ranking.score_help.verdict_sources %}
+                      <li>{{ item }}</li>
+                    {% endfor %}
+                  </ul>
+                </div>
+
+                <div class="score-help-section">
+                  <h4>Kto wchodzi do rankingu</h4>
+                  <ul class="score-help-list">
+                    {% for item in ranking.score_help.eligibility %}
+                      <li>{{ item }}</li>
+                    {% endfor %}
+                  </ul>
+                </div>
+
+                <div class="score-help-section">
+                  <h4>Jak rozstrzygany jest remis</h4>
+                  <ul class="score-help-list">
+                    {% for item in ranking.score_help.sorting %}
+                      <li>{{ item }}</li>
+                    {% endfor %}
+                  </ul>
+                </div>
+
+                <div class="score-help-section">
+                  <h4>Rola eff, RX i TX</h4>
+                  <p>{{ ranking.score_help.supporting_metrics }}</p>
+                </div>
+              </div>
+            </details>
+          {% endif %}
+        </div>
+        <p>{{ ranking.score_formula }}</p>
+      </article>
+    {% endif %}
+
+    {% if ranking.highlights %}
+      <article class="analysis-block">
+        <h3>Najwazniejsze sygnaly</h3>
+        <ul class="insight-list">
+          {% for insight in ranking.highlights %}
+            <li>{{ insight }}</li>
+          {% endfor %}
+        </ul>
+      </article>
+    {% endif %}
+
+    <div class="ranking-section-grid">
+      {% for section in ranking.group_sections %}
+        <article class="analysis-block ranking-table-card">
+          <div class="ranking-block-header">
+            <div>
+              <h3>{{ section.title }}</h3>
+              <p class="subtle">{{ section.subtitle }}</p>
+            </div>
+            <div class="analysis-note">
+              min. {{ section.minimum_session_count }} sesji i {{ section.minimum_status_coverage_label }} coverage
+            </div>
+          </div>
+
+          {% if section.rows %}
+            <div class="ranking-table-wrap">
+              <table class="ranking-table">
+                <thead>
+                  <tr>
+                    <th>Pozycja</th>
+                    <th>{{ section.title }}</th>
+                    <th>Score</th>
+                    <th>Coverage</th>
+                    <th>DEFECT</th>
+                    <th>NOT OK</th>
+                    <th>Warning</th>
+                    <th>Clean</th>
+                    <th>Wsparcie danych</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for row in section.rows %}
+                    <tr>
+                      <td>{{ loop.index }}</td>
+                      <td>
+                        <strong>{{ row.label }}</strong>
+                        {% if row.context_label %}
+                          <p class="subtle">{{ row.context_label }}</p>
+                        {% endif %}
+                      </td>
+                      <td>{{ row.reliability_score_label }}</td>
+                      <td>{{ row.status_coverage_label }}</td>
+                      <td>{{ row.defect_rate_label }}</td>
+                      <td>{{ row.not_ok_rate_label }}</td>
+                      <td>{{ row.warning_rate_label }}</td>
+                      <td>{{ row.clean_rate_label }}</td>
+                      <td>{{ row.support_label }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <p class="subtle">Brak danych do policzenia tego rankingu.</p>
+          {% endif %}
+        </article>
+      {% endfor %}
+    </div>
+  </section>
+{% else %}
+  <section class="analysis analysis-empty">
+    <div>
+      <p class="eyebrow">Nocny ranking niezawodnosci</p>
+      <h2>Brak snapshotu rankingu</h2>
+      <p class="subtle">
+        {% if ranking_error_message %}
+          {{ ranking_error_message }}
+        {% else %}
+          Brak wygenerowanego snapshotu rankingu. Uruchom job generujący ranking.
+        {% endif %}
+      </p>
+    </div>
+  </section>
+{% endif %}

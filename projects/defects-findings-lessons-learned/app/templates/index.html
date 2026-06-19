@@ -1,0 +1,1976 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Jazz Work Items</title>
+  <style>
+    :root{--bg:#edf3f9;--panel:#fffffff2;--line:#d7e1ee;--text:#172131;--muted:#64758b;--accent:#0f5cc0;--accent2:#0b4a98;--ok:#1f6a3d;--okbg:#edf8f1;--err:#a33737;--errbg:#fff1f1;--warn:#9a6400;--warnbg:#fff7e8;--shadow:0 18px 44px rgba(17,35,63,.12)}
+    *{box-sizing:border-box} html,body{margin:0;min-height:100%}
+    body{padding:24px;background:radial-gradient(circle at top left,rgba(15,92,192,.14),transparent 28%),linear-gradient(180deg,#f8fbff 0%,var(--bg) 100%);color:var(--text);font-family:Bahnschrift,"Segoe UI",sans-serif}
+    .app{display:grid;gap:18px}.hero,.panel,.card{background:var(--panel);border:1px solid rgba(255,255,255,.7);border-radius:24px;box-shadow:var(--shadow)}
+    .hero{display:flex;justify-content:space-between;gap:24px;padding:28px 32px}
+    .actions,.tabs,.row,.search,.legend,.badges,.modal-actions,.top-controls,.employee-tools{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    .eyebrow{margin:0 0 8px;font:700 12px/1 Bahnschrift,"Segoe UI",sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--accent)}
+    h1{margin:0;font-size:clamp(30px,3vw,40px)}
+    .sub,.note,.muted{color:var(--muted)} .sub{margin:10px 0 0;max-width:760px;font-size:15px}
+    .pill,.badge{padding:8px 12px;border-radius:999px;background:rgba(15,92,192,.08);color:var(--accent2);font-size:12px;font-weight:700}
+    .btn,.tab{appearance:none;border:1px solid transparent;border-radius:999px;padding:11px 18px;font:700 14px Bahnschrift,"Segoe UI",sans-serif;cursor:pointer}
+    .btn-primary{background:linear-gradient(180deg,var(--accent),var(--accent2));color:#fff}.btn-secondary{background:#fff;border-color:var(--line);color:var(--text)}
+    .btn:disabled{opacity:.5;cursor:not-allowed;box-shadow:none}
+    .panel{overflow:hidden}.top,.bar,.status{display:flex;justify-content:space-between;gap:16px;align-items:center;padding:18px 24px;border-bottom:1px solid var(--line)}
+    .tabs{padding:6px;border-radius:999px;background:rgba(14,27,45,.05)}
+    .tab{background:transparent;color:var(--muted)} .tab.active{background:#fff;color:var(--text);box-shadow:0 8px 20px rgba(17,35,63,.12)}
+    .top-controls{gap:14px}
+    .employee-tools{gap:8px}
+    .help-tip{position:relative;display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border:1px solid var(--line);border-radius:50%;background:#fff;color:var(--accent2);font:800 14px/1 Bahnschrift,"Segoe UI",sans-serif;cursor:help}
+    .tooltip-bubble{position:absolute;top:calc(100% + 8px);right:0;z-index:50;width:min(340px,calc(100vw - 32px));padding:12px 14px;border:1px solid var(--line);border-radius:16px;background:#fffffff7;box-shadow:0 20px 40px rgba(17,35,63,.2);color:var(--text);font-size:13px;line-height:1.5;opacity:0;pointer-events:none;transform:translateY(-4px);transition:opacity .18s ease,transform .18s ease}
+    .help-tip:hover .tooltip-bubble,.help-tip:focus-within .tooltip-bubble{opacity:1;pointer-events:auto;transform:translateY(0)}
+    .search{height:42px;padding:0 12px;border:1px solid var(--line);border-radius:999px;background:#fff;min-width:min(320px,100%);flex-wrap:nowrap}
+    .search span{white-space:nowrap;font-size:12px}
+    .search input{width:100%;height:100%;border:0;outline:none;background:transparent;padding:0;font:inherit;color:var(--text);line-height:1}
+    .status-main{flex:1;display:grid;gap:10px;min-width:0}
+    .status-box{padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:#f7f9fc;font-size:14px}
+    .status-box.success{background:var(--okbg);color:var(--ok)} .status-box.error{background:var(--errbg);color:var(--err)} .status-box.warning{background:var(--warnbg);color:var(--warn)}
+    .status-box.loading{background:linear-gradient(180deg,#f5fcf7 0%,#edf8f1 100%);border-color:rgba(31,106,61,.18);color:var(--ok)}
+    .status-progress{display:grid;gap:10px}
+    .status-progress-head{display:flex;justify-content:space-between;gap:12px;align-items:center}
+    .status-progress-label{display:flex;align-items:center;gap:10px;min-width:0}
+    .status-progress-text{font-weight:700}
+    .status-progress-percent{font-weight:800;font-size:16px;white-space:nowrap}
+    .status-progress-track{height:12px;border-radius:999px;background:rgba(31,106,61,.12);overflow:hidden;box-shadow:inset 0 0 0 1px rgba(31,106,61,.08)}
+    .status-progress-bar{height:100%;border-radius:inherit;background:linear-gradient(90deg,#33a852 0%,#1f8f42 100%);box-shadow:0 8px 18px rgba(31,106,61,.2);transition:width .22s ease}
+    .status-progress-note{font-size:12px;color:#4a6a57}
+    .hourglass-spinner{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:rgba(31,106,61,.12);font-size:14px;animation:hourglass-spin 1.1s linear infinite}
+    .analysis-filter{position:relative;display:grid;gap:8px;max-width:520px}
+    .analysis-filter-button{display:flex;justify-content:space-between;gap:12px;align-items:center;width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:16px;background:#fff;color:var(--text);font:700 14px Bahnschrift,"Segoe UI",sans-serif;cursor:pointer}
+    .analysis-filter-button span{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em}
+    .analysis-filter-button strong{text-align:left}
+    .analysis-filter-menu{position:absolute;top:calc(100% + 8px);left:0;z-index:25;display:grid;gap:12px;width:min(560px,calc(100vw - 48px));padding:16px;border:1px solid var(--line);border-radius:18px;background:#fffffff9;box-shadow:0 20px 40px rgba(17,35,63,.18)}
+    .analysis-filter-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+    .analysis-filter-head h3{margin:0 0 4px;font-size:16px}
+    .analysis-filter-head p{margin:0;color:var(--muted);font-size:12px;line-height:1.45}
+    .analysis-filter-table-wrap{max-height:min(48vh,360px);overflow:auto;border:1px solid var(--line);border-radius:16px;background:#fff}
+    .analysis-filter-table{width:100%;min-width:0;border-collapse:separate;border-spacing:0}
+    .analysis-filter-table thead th{position:sticky;top:0;z-index:1;background:#edf2f8;border-bottom:1px solid #c1cedd;text-align:left}
+    .analysis-filter-table td{padding:12px 14px}
+    .analysis-filter-table tbody tr{cursor:pointer}
+    .analysis-filter-table tbody tr:hover td{background:#f3f8ff}
+    .analysis-filter-checkbox{width:42px;text-align:center}
+    .analysis-filter-checkbox input{width:16px;height:16px;margin:0}
+    .analysis-tools{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    .analysis-export-btn{justify-self:start}
+    .th-note{display:block;margin-top:4px;color:var(--muted);font-size:11px;font-weight:400;line-height:1.4;text-transform:none;letter-spacing:0}
+    .lessons-checkbox{text-align:center}
+    .lessons-checkbox input{width:16px;height:16px;margin:0}
+    .lessons-exclusion-cell{min-width:220px}
+    .lessons-person-cell{min-width:320px}
+    .lessons-person-field{display:grid;gap:6px}
+    .lessons-person-field input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:12px;font:inherit;background:#fbfcff}
+    .lessons-person-field input.invalid{border-color:var(--err);background:#fff5f5}
+    .lessons-person-hint{font-size:12px;color:var(--muted);line-height:1.4}
+    .lessons-person-hint.error{color:var(--err)}
+    .lessons-generated-row td{background:#eef1f4!important;color:#738091}
+    .lessons-generated-row:hover td{background:#eef1f4!important}
+    .lessons-generated-row strong,.lessons-generated-row .muted,.lessons-generated-row .lessons-person-hint{color:#738091}
+    .lessons-generated-note{margin-top:8px;padding:8px 10px;border-radius:12px;background:#dde3ea;color:#475467;font-size:12px;font-weight:700;line-height:1.45}
+    .count{min-width:160px;text-align:right;color:var(--muted);font-size:13px;font-weight:700}
+    .debug-panel{margin:0 24px 18px;padding:14px 16px;border:1px solid var(--line);border-radius:18px;background:#fbfcff}
+    .debug-panel summary{cursor:pointer;font-weight:700}
+    .debug-panel pre{margin:12px 0 0;max-height:260px;overflow:auto;white-space:pre-wrap;word-break:break-word;font:12px/1.45 Consolas,"Courier New",monospace;color:var(--text)}
+    .hidden{display:none!important}.table-wrap{overflow:auto;max-height:min(72vh,calc(100vh - 280px));background:#fff}
+    table{width:100%;border-collapse:separate;border-spacing:0;min-width:980px}
+    thead th{position:sticky;top:0;background:#edf2f8;border-bottom:1px solid #c1cedd;text-align:left}
+    .head-btn{width:100%;display:flex;justify-content:space-between;gap:12px;padding:14px 16px;border:0;background:transparent;font:700 13px Bahnschrift,"Segoe UI",sans-serif;cursor:pointer}
+    td{padding:13px 16px;border-bottom:1px solid #e7edf5;font-size:14px;vertical-align:top}
+    tbody tr:nth-child(even) td{background:#fbfcfe} tbody tr:hover td{background:#f3f8ff}
+    .link{color:var(--accent2);font-weight:700;text-decoration:none}.empty{padding:40px 16px;text-align:center;color:var(--muted)}
+    .empty-inline{display:inline-flex;align-items:center;gap:10px}
+    .analysis{padding:22px 24px 28px;background:linear-gradient(180deg,rgba(249,251,255,.96),rgba(242,247,252,.92))}
+    .ll-dashboard{display:grid;gap:18px}
+    .ll-overview{display:grid;grid-template-columns:minmax(260px,1.15fr) minmax(0,1.85fr);gap:18px}
+    .ll-overview-copy{display:grid;gap:10px;align-content:start}
+    .ll-overview-copy h3{margin:0;font-size:24px}
+    .ll-overview-copy p{margin:0;color:var(--muted);line-height:1.6}
+    .ll-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px}
+    .ll-kpi{padding:18px 20px;border:1px solid var(--line);border-radius:20px;background:linear-gradient(180deg,#ffffff 0%,#f5f9ff 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.72)}
+    .ll-kpi-label{display:block;margin-bottom:10px;color:var(--muted);font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+    .ll-kpi-value{display:block;font-size:30px;font-weight:800;line-height:1.1}
+    .ll-kpi-note{display:block;margin-top:8px;color:var(--muted);font-size:12px;line-height:1.45}
+    .ll-kpi-note.warning{color:var(--warn)}
+    .ll-chart-card{display:grid;gap:16px}
+    .ll-chart-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap}
+    .ll-chart-head p{max-width:760px}
+    .ll-legend{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .ll-legend-item{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--line);border-radius:999px;background:#fff;font-size:12px;font-weight:700}
+    .ll-legend-dot{width:12px;height:12px;border-radius:50%;display:inline-block}
+    .ll-legend-dot.ll{background:#f39c45}
+    .ll-legend-dot.reviewed{background:#0f5cc0}
+    .ll-legend-dot.pending{background:#d7e1ee}
+    .ll-vertical-chart{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:16px;align-items:end;min-height:350px;padding:10px 0 0}
+    .ll-bar-card{display:grid;gap:12px;justify-items:center;padding:14px 12px 16px;border:1px solid var(--line);border-radius:20px;background:linear-gradient(180deg,#ffffff 0%,#f9fbff 100%)}
+    .ll-bar-shell{display:flex;align-items:flex-end;justify-content:center;width:100%;height:220px;padding:0 10px}
+    .ll-bar{display:flex;flex-direction:column-reverse;justify-content:flex-start;width:min(82px,100%);height:100%;border-radius:20px;background:#edf2f8;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(23,33,49,.06)}
+    .ll-segment{position:relative;display:flex;align-items:center;justify-content:center;width:100%;min-height:0}
+    .ll-segment.ll{background:linear-gradient(180deg,#f7b35a 0%,#f39c45 100%)}
+    .ll-segment.reviewed{background:linear-gradient(180deg,#2f78d6 0%,#0f5cc0 100%)}
+    .ll-segment.pending{background:linear-gradient(180deg,#edf2f8 0%,#d7e1ee 100%)}
+    .ll-segment-label{padding:4px 6px;color:#fff;font-size:11px;font-weight:800;line-height:1.2;text-align:center;text-shadow:0 1px 2px rgba(0,0,0,.18)}
+    .ll-segment.pending .ll-segment-label{color:#425466;text-shadow:none}
+    .ll-bar-caption{display:grid;gap:4px;justify-items:center;text-align:center}
+    .ll-bar-caption strong{font-size:16px}
+    .ll-bar-caption span{color:var(--muted);font-size:12px;line-height:1.4}
+    .ll-bar-metrics{display:grid;gap:4px;width:100%;font-size:12px}
+    .ll-bar-metrics span{display:flex;justify-content:center;text-align:center;color:var(--muted);line-height:1.4}
+    .ll-chart-empty{padding:28px 18px;border:1px dashed var(--line);border-radius:18px;background:#fff;color:var(--muted);text-align:center}
+    .grid{display:grid;gap:18px}.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:16px}
+    .metric{padding:18px 20px}.metric h3{margin:0 0 8px;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em}.metric p{margin:0;font-size:30px;font-weight:800}
+    .charts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px}.tables{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}.card{padding:20px 22px}
+    .card h3{margin:0 0 10px;font-size:18px}.card p{margin:0;color:var(--muted);line-height:1.5}
+    .pie-box{display:grid;gap:14px;justify-items:center}.pie-shell{width:210px;height:210px;display:grid;place-items:center;transform:perspective(960px) rotateX(24deg);filter:drop-shadow(0 22px 16px rgba(19,47,86,.18))}
+    .pie{width:100%;aspect-ratio:1;border-radius:50%;border:10px solid rgba(255,255,255,.82);box-shadow:0 18px 24px rgba(15,56,110,.14);position:relative}.pie:after{content:"";position:absolute;inset:10%;border-radius:50%;background:radial-gradient(circle at 35% 25%,rgba(255,255,255,.45),transparent 42%)}
+    .legend{display:grid;gap:8px;width:100%}.legend-item{display:flex;justify-content:space-between;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:14px;background:#fff}.dot{width:12px;height:12px;border-radius:50%;display:inline-block}
+    .analysis-table{background:#fff;border:1px solid var(--line);border-radius:18px;overflow:auto}.analysis-table table{min-width:0}.analysis-table thead th{position:static}
+    .analysis-note{margin-top:8px;font-size:12px;color:var(--muted)}
+    .menu{position:fixed;z-index:40;display:none;width:min(320px,calc(100vw - 32px));max-height:calc(100vh - 32px);padding:14px;border:1px solid var(--line);border-radius:18px;background:#fffffff7;box-shadow:0 20px 40px rgba(17,35,63,.22);overflow:auto}
+    .menu.open{display:block}.menu h3{margin:0 0 4px;font-size:14px}.menu p{margin:0 0 10px;color:var(--muted);font-size:12px}
+    .menu-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+    .menu-input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:12px;font:inherit;background:#fff}
+    .options{display:flex;flex-direction:column;max-height:240px;overflow:auto;margin:10px 0;border:1px solid var(--line);border-radius:14px;background:#fbfcff}
+    .opt{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:center;padding:10px 12px;border-bottom:1px solid #e8eef7;font-size:13px;cursor:pointer}
+    .opt:last-child{border-bottom:0}.opt input{margin:0;width:14px;height:14px}.opt span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .modal-backdrop{position:fixed;inset:0;z-index:30;display:none;background:rgba(9,17,29,.4);backdrop-filter:blur(4px)} .modal-backdrop.open{display:flex;align-items:center;justify-content:center;padding:20px}
+    .modal{width:min(460px,calc(100% - 40px));margin:0;border-radius:24px;background:#fffffff9;box-shadow:0 24px 48px rgba(17,35,63,.24);overflow:hidden;max-height:calc(100vh - 40px);display:flex;flex-direction:column}
+    .modal.modal-wide{width:min(720px,calc(100% - 40px))}
+    .modal.modal-full{width:min(1400px,calc(100vw - 40px))}
+    .modal-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;padding:24px 24px 12px}.modal-body{display:grid;gap:14px;padding:0 24px 24px;min-height:0}
+    .field{display:grid;gap:8px}.field input{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:14px;font:inherit;background:#fbfcff}.error{min-height:20px;color:var(--err);font-size:13px;font-weight:600}
+    .login-status{min-height:24px;display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13px;font-weight:700}
+    .confirm-box{display:grid;gap:10px;padding:14px 16px;border:1px solid var(--line);border-radius:18px;background:#f8fbff}
+    .modal-note{margin:0;color:var(--muted);font-size:13px;line-height:1.5}
+    .modal-table-wrap{border:1px solid var(--line);border-radius:18px;overflow:auto;background:#fff;max-height:min(60vh,520px)}
+    .modal-table{width:100%;min-width:0;border-collapse:separate;border-spacing:0}
+    .modal-table thead th{position:sticky;top:0;z-index:1;background:#edf2f8;border-bottom:1px solid #c1cedd;text-align:left}
+    .modal-table td{padding:12px 14px}
+    .icon-btn{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--err);cursor:pointer;font-size:18px}
+    .cell-edit{display:flex;align-items:center;gap:10px}
+    .cell-edit input[type="checkbox"]{width:16px;height:16px;margin:0}
+    .edit-input{width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:12px;font:inherit;background:#fbfcff}
+    .spinner{display:inline-block;width:15px;height:15px;border:2px solid rgba(15,92,192,.18);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}@keyframes hourglass-spin{to{transform:rotate(360deg)}}
+    @media (max-width:1100px){.ll-overview,.metrics,.charts,.tables{grid-template-columns:1fr 1fr}}
+    @media (max-width:900px){body{padding:16px}.hero,.top,.bar,.status{padding-left:16px;padding-right:16px;flex-direction:column;align-items:stretch}.actions .btn,.search,.employee-tools .btn{width:100%}.employee-tools{align-items:stretch}.help-tip{align-self:flex-start}.ll-overview,.metrics,.charts,.tables{grid-template-columns:1fr}.count{text-align:left}.ll-vertical-chart{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <section class="hero">
+      <div>
+        <p class="eyebrow">Jazz Reporting</p>
+        <h1>Work Items</h1>
+        <p class="sub">Defecty i Findingi w zakładkach Owner, Creator oraz Analiza AI z wykresami kołowymi i insightami dla Department.</p>
+      </div>
+      <div class="actions">
+        <div id="sessionBadge" class="pill">Nie zalogowano</div>
+        <button id="btnLogin" class="btn btn-secondary" type="button">Zaloguj do Jazz</button>
+        <button id="btnRefresh" class="btn btn-primary" type="button">Odśwież dane</button>
+      </div>
+    </section>
+    <section class="panel">
+      <div class="top">
+        <div class="top-controls">
+          <div class="tabs">
+            <button id="tabOwner" class="tab active" type="button">Owner</button>
+            <button id="tabCreator" class="tab" type="button">Creator</button>
+            <button id="tabAnalysis" class="tab" type="button">Analiza</button>
+          </div>
+          <div class="employee-tools">
+            <button id="btnManagePeople" class="btn btn-secondary" type="button">Dodaj pracowników do bazy danych</button>
+            <div class="help-tip" tabindex="0" aria-label="Informacja o bazie pracowników">
+              <span>?</span>
+              <div class="tooltip-bubble">Nowi pracownicy mogą nie być uwzględnieni w zestawieniu. Dodaj pracownika do bazy danych przez naciśnięcie przycisku. Wpisz imię, nazwisko oraz dział.</div>
+            </div>
+          </div>
+        </div>
+        <p id="topNote" class="note">Kliknij nagłówek kolumny, aby sortować i filtrować.</p>
+      </div>
+      <div id="searchBar" class="bar">
+        <div>
+          <p style="margin:0;font-size:15px;font-weight:700">Wyszukiwanie globalne</p>
+          <p class="note">Przeszukuje wszystkie widoczne kolumny.</p>
+        </div>
+        <label class="search" for="globalSearch"><span class="muted">Szukaj</span><input id="globalSearch" type="text" placeholder="Np. DER1, Nowak, radar"></label>
+      </div>
+<div class="status">
+        <div class="status-main">
+          <div id="statusBox" class="status-box">Zaloguj się do Jazz, aby pobrać dane.</div>
+          <div id="analysisDepartmentFilterWrap" class="analysis-filter hidden">
+            <button id="analysisDepartmentFilterButton" class="analysis-filter-button" type="button" aria-expanded="false" aria-controls="analysisDepartmentFilterMenu">
+              <div>
+                <span>Filtr działu</span>
+                <strong id="analysisDepartmentFilterValue">Wszystkie działy</strong>
+              </div>
+              <strong>▾</strong>
+            </button>
+            <div id="analysisDepartmentFilterMenu" class="analysis-filter-menu hidden" aria-hidden="true">
+              <div class="analysis-filter-head">
+                <div>
+                  <h3>Filtr działu</h3>
+                  <p>Wybierz jeden dział. Analiza pokaże tylko rekordy, w których dział występuje jako Owner albo Creator.</p>
+                </div>
+                <button id="btnCloseAnalysisDepartment" class="btn btn-secondary" type="button">Zamknij</button>
+              </div>
+              <div class="analysis-filter-table-wrap">
+                <table class="analysis-filter-table">
+                  <thead>
+                    <tr>
+                      <th class="analysis-filter-checkbox"><button class="head-btn" type="button">✓</button></th>
+                      <th><button class="head-btn" type="button">Dział</button></th>
+                      <th><button class="head-btn" type="button">Kierownik</button></th>
+                    </tr>
+                  </thead>
+                  <tbody id="analysisDepartmentFilterBody"></tbody>
+                </table>
+              </div>
+              <div class="modal-actions">
+                <button id="btnClearAnalysisDepartment" class="btn btn-secondary" type="button">Wyczyść filtr</button>
+              </div>
+            </div>
+            <div class="analysis-tools">
+              <button id="btnAnalyzeLessonsLearned" class="btn btn-primary analysis-export-btn" type="button">Analizuj Lessons Learned</button>
+              <button id="btnExportAnalysisPdf" class="btn btn-secondary analysis-export-btn" type="button">Zapisz widok analizy do PDF</button>
+            </div>
+          </div>
+        </div>
+        <div id="countBox" class="count">0 rekordów</div>
+      </div>
+      <div id="dataView">
+        <div class="table-wrap">
+          <table id="tbl"><thead id="tableHead"></thead><tbody></tbody></table>
+        </div>
+      </div>
+      <div id="analysisView" class="analysis hidden">
+        <div class="grid">
+          <section class="ll-dashboard">
+            <article class="card ll-overview">
+              <div class="ll-overview-copy">
+                <p class="eyebrow">Lessons Learned</p>
+                <h3>Postep powtarzajacych sie problemow</h3>
+                <p>Wykres pokazuje, jaka czesc powtarzajacych sie problemow zostala juz przejrzana oraz ile z nich odklikano jako Lessons Learned. Slupki korzystaja z aktywnego filtra dzialu.</p>
+              </div>
+              <div id="llKpiGrid" class="ll-kpis"></div>
+            </article>
+            <article class="card ll-chart-card">
+              <div class="ll-chart-head">
+                <div>
+                  <h3>Lessons Learned wg dzialu</h3>
+                  <p class="analysis-note">Kazdy slupek ma 100% wysokosci dla liczby powtarzajacych sie problemow w danym dziale.</p>
+                </div>
+                <div class="ll-legend" aria-label="Legenda wykresu">
+                  <span class="ll-legend-item"><span class="ll-legend-dot ll" aria-hidden="true"></span>Odklikane LL</span>
+                  <span class="ll-legend-item"><span class="ll-legend-dot reviewed" aria-hidden="true"></span>Przejrzane bez LL</span>
+                  <span class="ll-legend-item"><span class="ll-legend-dot pending" aria-hidden="true"></span>Nieprzejrzane</span>
+                </div>
+              </div>
+              <div id="llVerticalChart" class="ll-vertical-chart"></div>
+            </article>
+            <article class="card">
+              <h3>Podsumowanie po dziale</h3>
+              <p class="analysis-note">Tabela pokazuje wartosci liczbowe i procentowe dla postepu przegladu i Lessons Learned.</p>
+              <div id="llDepartmentSummaryTable" class="analysis-table"></div>
+            </article>
+          </section>
+          <section class="charts">
+            <article class="card"><h3>Department Owner</h3><div id="ownerChart"></div></article>
+            <article class="card"><h3>Department Creator</h3><div id="creatorChart"></div></article>
+            <article class="card"><h3>Projekty powtorzen</h3><div id="projectChart"></div></article>
+          </section>
+          <section class="card"><h3>Powtarzajace sie przypadki</h3><p class="analysis-note">Tabela pokazuje dokladnie ktore defecty i findingi wracaja, w jakich projektach, gdzie zostaly stworzone i dla jakich dzialow owner wystapily.</p><div id="repeatTable" class="analysis-table"></div></section>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div id="filterMenu" class="menu" aria-hidden="true"></div>
+
+  <div id="loginModal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+      <div class="modal-head">
+        <div><h2 id="loginTitle" style="margin:0 0 6px;font-size:24px">Zaloguj do Jazz</h2><p class="muted" style="margin:0">Podaj login i hasło. Po poprawnym logowaniu bieżący widok zostanie automatycznie pobrany.</p></div>
+        <button id="btnCloseModal" class="btn btn-secondary" type="button">Zamknij</button>
+      </div>
+      <form id="loginForm" class="modal-body">
+        <div class="field"><label for="modalUsername">Login</label><input id="modalUsername" type="text" autocomplete="username" placeholder="Wprowadź login"></div>
+        <div class="field"><label for="modalPassword">Hasło</label><input id="modalPassword" type="password" autocomplete="current-password" placeholder="Wprowadź hasło"></div>
+        <div id="modalError" class="error"></div>
+        <div id="loginStatus" class="login-status"></div>
+        <div class="modal-actions"><button id="btnCancelModal" class="btn btn-secondary" type="button">Anuluj</button><button id="btnSubmitLogin" class="btn btn-primary" type="submit">Zaloguj</button></div>
+      </form>
+    </div>
+  </div>
+
+  <div id="peopleModal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="peopleTitle">
+      <div class="modal-head">
+        <div><h2 id="peopleTitle" style="margin:0 0 6px;font-size:24px">Dodaj pracownika do bazy danych</h2><p class="muted" style="margin:0">Wpisz nazwę pracownika i dział. Po zatwierdzeniu pojawi się dodatkowe potwierdzenie.</p></div>
+        <button id="btnClosePeopleModal" class="btn btn-secondary" type="button">Zamknij</button>
+      </div>
+      <form id="peopleForm" class="modal-body">
+        <div class="field"><label for="personName">Nazwa</label><input id="personName" type="text" placeholder="Np. Jan Kowalski"></div>
+        <div class="field"><label for="personDepartment">Dział</label><input id="personDepartment" type="text" placeholder="Np. DER1"></div>
+        <p class="modal-note">Jeżeli pracownik już istnieje, jego dział zostanie zaktualizowany.</p>
+        <div id="peopleError" class="error"></div>
+        <div id="peopleStatus" class="login-status"></div>
+        <div id="peopleConfirmBox" class="confirm-box hidden">
+          <strong>Czy dodawane dane na pewno są poprawne?</strong>
+          <div class="modal-actions">
+            <button id="btnConfirmPeopleYes" class="btn btn-primary" type="button">Tak</button>
+            <button id="btnConfirmPeopleNo" class="btn btn-secondary" type="button">Nie</button>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button id="btnShowPeopleList" class="btn btn-secondary" type="button">Zobacz aktualną listę pracowników w bazie</button>
+          <button id="btnCancelPeopleModal" class="btn btn-secondary" type="button">Anuluj</button>
+          <button id="btnSubmitPeople" class="btn btn-primary" type="submit">Zatwierdź</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="peopleListModal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal modal-wide" role="dialog" aria-modal="true" aria-labelledby="peopleListTitle">
+      <div class="modal-head">
+        <div><h2 id="peopleListTitle" style="margin:0 0 6px;font-size:24px">Lista pracowników w bazie</h2><p class="muted" style="margin:0">Aktualna zawartość tabeli pracowników.</p></div>
+        <button id="btnClosePeopleListModal" class="btn btn-secondary" type="button">Zamknij</button>
+      </div>
+      <div class="modal-body">
+        <div id="peopleListStatus" class="login-status"></div>
+        <label class="search" for="peopleListFilter"><span class="muted">Filtruj</span><input id="peopleListFilter" type="text" placeholder="Nazwa lub dział"></label>
+        <div class="modal-table-wrap">
+          <table class="modal-table">
+            <thead>
+              <tr>
+                <th><button class="head-btn" type="button">Nazwa</button></th>
+                <th><button class="head-btn" type="button">Dział</button></th>
+                <th><button class="head-btn" type="button">Login Jazz</button></th>
+                <th><button class="head-btn" type="button">Usuń</button></th>
+              </tr>
+            </thead>
+            <tbody id="peopleListBody"></tbody>
+          </table>
+        </div>
+        <div id="peopleDeleteConfirm" class="confirm-box hidden">
+          <strong>Czy na pewno usunąć tego pracownika z listy?</strong>
+          <div class="modal-actions">
+            <button id="btnConfirmDeleteYes" class="btn btn-primary" type="button">Tak</button>
+            <button id="btnConfirmDeleteNo" class="btn btn-secondary" type="button">Nie</button>
+          </div>
+        </div>
+        <div id="peopleSaveConfirm" class="confirm-box hidden">
+          <strong>Czy na pewno zapisać zmiany?</strong>
+          <div class="modal-actions">
+            <button id="btnConfirmSavePeopleYes" class="btn btn-primary" type="button">Tak</button>
+            <button id="btnConfirmSavePeopleNo" class="btn btn-secondary" type="button">Nie</button>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button id="btnToggleEditPeople" class="btn btn-secondary" type="button">Edytuj</button>
+          <button id="btnSavePeopleChanges" class="btn btn-secondary hidden" type="button">Zapisz zmiany</button>
+          <button id="btnClosePeopleListFooter" class="btn btn-primary" type="button">Zamknij</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="lessonsLearnedModal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal modal-full" role="dialog" aria-modal="true" aria-labelledby="lessonsLearnedTitle">
+      <div class="modal-head">
+        <div>
+          <h2 id="lessonsLearnedTitle" style="margin:0 0 6px;font-size:24px">Analiza Lessons Learned</h2>
+          <p class="muted" style="margin:0">Powtarzajace sie przypadki dla aktualnego widoku analizy.</p>
+        </div>
+        <button id="btnCloseLessonsLearnedModalTop" class="btn btn-secondary" type="button">Zamknij</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-note">Zaznacz przypadki, ktore maja trafic do raportu Lessons Learned. Po kliknieciu Zapisz raport PDF zostanie pobrany, a LL Candidate utworzony w Jazz.</p>
+        <div class="modal-table-wrap">
+          <table class="modal-table">
+            <thead>
+              <tr>
+                <th><button class="head-btn" type="button">Przypadek</button></th>
+                <th><button class="head-btn" type="button">Typ</button></th>
+                <th><button class="head-btn" type="button">Liczba</button></th>
+                <th><button class="head-btn" type="button">Projekty</button></th>
+                <th>
+                  <button class="head-btn" type="button" style="display:block;text-align:left">
+                    <span>Przypadek Lessons Learned</span>
+                    <span class="th-note">Prosze o zaznaczenie przypadkow lessons learned.</span>
+                  </button>
+                </th>
+                <th>
+                  <button class="head-btn" type="button" style="display:block;text-align:left">
+                    <span>Wykluczenie przypadku Lessons Learned</span>
+                    <span class="th-note">Zaznaczenie zapisze przypadek jako przeanalizowany i wykluczony.</span>
+                  </button>
+                </th>
+                <th>
+                  <button class="head-btn" type="button" style="display:block;text-align:left">
+                    <span>Odpowiedzialnosc DE</span>
+                    <span class="th-note">Prosze o wpisanie osoby realizujacej kandydata LL.</span>
+                  </button>
+                </th>
+              </tr>
+            </thead>
+            <tbody id="lessonsLearnedBody"></tbody>
+          </table>
+        </div>
+        <datalist id="lessonsLearnedPeopleOptions"></datalist>
+        <div id="lessonsLearnedStatus" class="login-status"></div>
+        <div class="modal-actions">
+          <button id="btnCloseLessonsLearnedModal" class="btn btn-secondary" type="button">Zamknij</button>
+          <button id="btnSaveLessonsLearnedPdf" class="btn btn-primary" type="button">Zapisz</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const statusBox=document.getElementById("statusBox"),countBox=document.getElementById("countBox"),tableHead=document.getElementById("tableHead"),tableBody=document.querySelector("#tbl tbody"),globalSearchEl=document.getElementById("globalSearch"),sessionBadge=document.getElementById("sessionBadge"),btnLogin=document.getElementById("btnLogin"),btnRefresh=document.getElementById("btnRefresh"),tabOwner=document.getElementById("tabOwner"),tabCreator=document.getElementById("tabCreator"),tabAnalysis=document.getElementById("tabAnalysis"),btnManagePeople=document.getElementById("btnManagePeople"),loginModal=document.getElementById("loginModal"),loginForm=document.getElementById("loginForm"),modalUsername=document.getElementById("modalUsername"),modalPassword=document.getElementById("modalPassword"),modalError=document.getElementById("modalError"),loginStatus=document.getElementById("loginStatus"),btnSubmitLogin=document.getElementById("btnSubmitLogin"),peopleModal=document.getElementById("peopleModal"),peopleForm=document.getElementById("peopleForm"),personName=document.getElementById("personName"),personDepartment=document.getElementById("personDepartment"),peopleError=document.getElementById("peopleError"),peopleStatus=document.getElementById("peopleStatus"),peopleConfirmBox=document.getElementById("peopleConfirmBox"),btnSubmitPeople=document.getElementById("btnSubmitPeople"),btnShowPeopleList=document.getElementById("btnShowPeopleList"),btnConfirmPeopleYes=document.getElementById("btnConfirmPeopleYes"),btnConfirmPeopleNo=document.getElementById("btnConfirmPeopleNo"),peopleListModal=document.getElementById("peopleListModal"),peopleListStatus=document.getElementById("peopleListStatus"),peopleListFilter=document.getElementById("peopleListFilter"),peopleListBody=document.getElementById("peopleListBody"),peopleDeleteConfirm=document.getElementById("peopleDeleteConfirm"),btnConfirmDeleteYes=document.getElementById("btnConfirmDeleteYes"),btnConfirmDeleteNo=document.getElementById("btnConfirmDeleteNo"),peopleSaveConfirm=document.getElementById("peopleSaveConfirm"),btnConfirmSavePeopleYes=document.getElementById("btnConfirmSavePeopleYes"),btnConfirmSavePeopleNo=document.getElementById("btnConfirmSavePeopleNo"),btnToggleEditPeople=document.getElementById("btnToggleEditPeople"),btnSavePeopleChanges=document.getElementById("btnSavePeopleChanges"),searchBar=document.getElementById("searchBar"),dataView=document.getElementById("dataView"),analysisView=document.getElementById("analysisView"),topNote=document.getElementById("topNote"),filterMenu=document.getElementById("filterMenu"),analysisDepartmentFilterWrap=document.getElementById("analysisDepartmentFilterWrap"),analysisDepartmentFilterButton=document.getElementById("analysisDepartmentFilterButton"),analysisDepartmentFilterValue=document.getElementById("analysisDepartmentFilterValue"),analysisDepartmentFilterMenu=document.getElementById("analysisDepartmentFilterMenu"),analysisDepartmentFilterBody=document.getElementById("analysisDepartmentFilterBody"),btnCloseAnalysisDepartment=document.getElementById("btnCloseAnalysisDepartment"),btnClearAnalysisDepartment=document.getElementById("btnClearAnalysisDepartment"),btnAnalyzeLessonsLearned=document.getElementById("btnAnalyzeLessonsLearned"),btnExportAnalysisPdf=document.getElementById("btnExportAnalysisPdf"),lessonsLearnedModal=document.getElementById("lessonsLearnedModal"),lessonsLearnedBody=document.getElementById("lessonsLearnedBody"),lessonsLearnedPeopleOptions=document.getElementById("lessonsLearnedPeopleOptions"),lessonsLearnedStatus=document.getElementById("lessonsLearnedStatus"),btnCloseLessonsLearnedModal=document.getElementById("btnCloseLessonsLearnedModal"),btnCloseLessonsLearnedModalTop=document.getElementById("btnCloseLessonsLearnedModalTop"),btnSaveLessonsLearnedPdf=document.getElementById("btnSaveLessonsLearnedPdf");
+    const llKpiGrid=document.getElementById("llKpiGrid"),llVerticalChart=document.getElementById("llVerticalChart"),llDepartmentSummaryTable=document.getElementById("llDepartmentSummaryTable");
+    let sessionState={authenticated:false,username:"",can_access_analysis:false,can_manage_people:false,csrf_token:""},currentTab="owner",allItems=[],analysisData=null,analysisItems=[],selectedAnalysisDepartment="",sortState={key:"",direction:""},columnFilters={},loading=false,activeFilterKey="",activeAnchor=null,pendingPersonPayload=null,peopleListRows=[],personFirstName=null,personJazzLogin=null,pendingDeletePerson=null,peopleEditMode=false,peopleEditSelection={},peopleEditDrafts={},lessonsLearnedSelection={},lessonsLearnedPeopleRows=[],lessonsLearnedPeopleByOptionValue={},lessonsLearnedSavedCases={},analysisProgressTimer=null,analysisProgressValue=0,lessonsLearnedSavedCasesKeySignature="",lessonsLearnedSavedCasesFetched=false;
+    const colors=["#0f5cc0","#1ca59a","#f39c45","#d35454","#7f8cfa","#31b36c","#c77dff","#5c6c7f"];
+    const cols=()=>[{key:"project",label:"Project"},{key:"type",label:"Type"},{key:"owner",label:currentTab==="owner"?"Owner":"Creator"},{key:"department",label:"Department"},{key:"work_item_id",label:"Work Item ID"},{key:"work_item",label:"Work Item"}];
+    const esc=s=>(s??"").toString().replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
+    const val=(it,key)=>(it?.[key]??"").toString().trim();
+    const formatPercent=(value,total)=>!total?"0.0%":`${((Number(value||0)/Number(total||0))*100).toFixed(1)}%`;
+    const blob=it=>cols().map(c=>val(it,c.key)).join(" ").toLowerCase();
+    const distinct=key=>Array.from(new Set(allItems.map(it=>val(it,key)))).sort((a,b)=>a.localeCompare(b,"pl",{numeric:true,sensitivity:"base"}));
+    const buildLessonsLearnedPersonOptionValue=row=>`${(row?.name||"").trim()} | ${(row?.department||"").trim()}`.trim();
+    const getLessonsLearnedCaseKey=row=>((row?.normalized_summary||"").toString().trim().toLowerCase());
+    const normalizeJazzLoginValue=value=>(value||"").toString().trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"");
+    const buildSuggestedJazzLogin=(lastName,firstName)=>{
+      const surnameToken=((lastName||"").trim().split(/\s+/).filter(Boolean)[0]||"");
+      const surnameBase=(surnameToken.split("-")[0]||surnameToken).trim();
+      const firstToken=((firstName||"").trim().split(/\s+/).filter(Boolean)[0]||"").trim();
+      const normalizedSurname=normalizeJazzLoginValue(surnameBase);
+      const normalizedFirst=normalizeJazzLoginValue(firstToken);
+      if(normalizedSurname&&normalizedFirst) return `${normalizedSurname}${normalizedFirst.slice(0,1)}`;
+      return normalizeJazzLoginValue(`${surnameBase}${firstToken}`);
+    };
+    const stopAnalysisProgress=()=>{
+      if(analysisProgressTimer){
+        clearInterval(analysisProgressTimer);
+        analysisProgressTimer=null;
+      }
+    };
+    const renderAnalysisProgress=()=>{
+      const safeValue=Math.max(0,Math.min(99,Math.round(analysisProgressValue)));
+      statusBox.className="status-box loading";
+      statusBox.innerHTML=`<div class="status-progress"><div class="status-progress-head"><div class="status-progress-label"><span class="hourglass-spinner" aria-hidden="true">⌛</span><span class="status-progress-text">Przygotowywanie analizy AI z danych Owner i Creator...</span></div><span class="status-progress-percent">${safeValue}%</span></div><div class="status-progress-track" aria-hidden="true"><div class="status-progress-bar" style="width:${safeValue}%"></div></div><div class="status-progress-note">Trwa ladowanie i laczenie danych. Wynik pojawi sie automatycznie po zakonczeniu.</div></div>`;
+    };
+    const startAnalysisProgress=()=>{
+      stopAnalysisProgress();
+      analysisProgressValue=4;
+      renderAnalysisProgress();
+      analysisProgressTimer=setInterval(()=>{
+        const remaining=96-analysisProgressValue;
+        const step=Math.max(1,Math.ceil(remaining*0.03));
+        analysisProgressValue=Math.min(96,analysisProgressValue+step);
+        renderAnalysisProgress();
+      },880);
+    };
+    const setStatus=(msg,kind="")=>{
+      stopAnalysisProgress();
+      statusBox.textContent=msg;
+      statusBox.className=`status-box${kind?` ${kind}`:""}`;
+    };
+    const nativeFetch=window.fetch.bind(window);
+    window.fetch=(input,init={})=>{
+      const options={...init};
+      const requestUrl=typeof input==="string"?input:(input?.url||window.location.href);
+      const method=(options.method||(typeof input!=="string"&&input?.method)||"GET").toUpperCase();
+      const absoluteUrl=new URL(requestUrl,window.location.href);
+      const headers=new Headers(options.headers||{});
+      if(absoluteUrl.origin===window.location.origin){
+        headers.set("X-Requested-With","XMLHttpRequest");
+        if(!["GET","HEAD","OPTIONS"].includes(method) && sessionState.csrf_token){
+          headers.set("X-CSRF-Token",sessionState.csrf_token);
+        }
+        options.credentials=options.credentials||"same-origin";
+      }
+      options.headers=headers;
+      return nativeFetch(input,options);
+    };
+    const applySessionUser=user=>{
+      sessionState={
+        authenticated:!!user?.authenticated,
+        username:(user?.username||"").trim(),
+        can_access_analysis:!!user?.can_access_analysis,
+        can_manage_people:!!user?.can_manage_people,
+        csrf_token:(user?.csrf_token||"").trim(),
+      };
+    };
+    const canAccessAnalysis=()=>!!sessionState.can_access_analysis;
+    const canManagePeople=()=>!!sessionState.can_manage_people;
+    const analysisAccessMessage=()=>{
+      const allowedLogins="";
+      if(sessionState.authenticated){
+        return `Login ${sessionState.username} nie ma uprawnien do zakladki Analiza.`;
+      }
+      return "Zaloguj sie do Jazz kontem z uprawnieniami do zakladki Analiza.";
+    };
+    const peopleAccessMessage=()=>{
+      if(sessionState.authenticated){
+        return `Login ${sessionState.username} nie ma uprawnien do zarzadzania baza pracownikow.`;
+      }
+      return "Zaloguj sie do Jazz kontem z uprawnieniami do zarzadzania baza pracownikow.";
+    };
+    const updateAnalysisAccess=()=>{
+      const allowed=canAccessAnalysis();
+      tabAnalysis.disabled=!allowed;
+      tabAnalysis.setAttribute("aria-disabled",String(!allowed));
+      tabAnalysis.title=allowed?"":analysisAccessMessage();
+    };
+    const updatePeopleManagementAccess=()=>{
+      const allowed=canManagePeople();
+      btnManagePeople.disabled=!allowed;
+      btnManagePeople.setAttribute("aria-disabled",String(!allowed));
+      btnManagePeople.title=allowed?"":peopleAccessMessage();
+    };
+    const updateAccessControls=()=>{
+      updateAnalysisAccess();
+      updatePeopleManagementAccess();
+    };
+    const ensureAnalysisAccess=()=>{
+      if(canAccessAnalysis()) return true;
+      const message=analysisAccessMessage();
+      setStatus(message,"warning");
+      return false;
+    };
+    const ensurePeopleManagementAccess=()=>{
+      if(canManagePeople()) return true;
+      const message=peopleAccessMessage();
+      setStatus(message,"warning");
+      return false;
+    };
+    const sessionUI=()=>{
+      if(sessionState.authenticated){
+        sessionBadge.textContent=`Połączono jako ${sessionState.username}`;
+        btnLogin.textContent="Zmień konto";
+        updateAccessControls();
+        return;
+      }
+      sessionBadge.textContent="Nie zalogowano";
+      btnLogin.textContent="Zaloguj do Jazz";
+      updateAccessControls();
+      return;
+    };
+    const setTabLoading=(btn,_on,label)=>btn.innerHTML=`<span>${label}</span>`;
+    const openModal=()=>{modalUsername.value=sessionState.username;modalPassword.value="";modalError.textContent="";loginStatus.innerHTML="";loginModal.classList.add("open");loginModal.setAttribute("aria-hidden","false");setTimeout(()=>modalUsername.focus(),0)};
+    const closeModal=()=>{loginModal.classList.remove("open");loginModal.setAttribute("aria-hidden","true")};
+    const refreshSessionState=async()=>{
+      try{
+        const res=await fetch("/api/session");
+        const data=await res.json();
+        applySessionUser(data.user||null);
+      }catch(_err){
+        applySessionUser(null);
+      }
+      sessionUI();
+      return sessionState.authenticated;
+    };
+    const handleUnauthorized=async message=>{
+      applySessionUser(null);
+      sessionUI();
+      setStatus(message||"Sesja wygasla. Zaloguj sie ponownie do Jazz.","warning");
+      openModal();
+    };
+    const closeMenu=()=>{activeFilterKey="";activeAnchor=null;filterMenu.classList.remove("open");filterMenu.setAttribute("aria-hidden","true")};
+    const togglePeopleConfirm=show=>peopleConfirmBox.classList.toggle("hidden",!show);
+    const setPeopleBusy=(busy,message="")=>{
+      personName.disabled=busy;
+      if(personFirstName) personFirstName.disabled=busy;
+      if(personJazzLogin) personJazzLogin.disabled=busy;
+      personDepartment.disabled=busy;
+      btnSubmitPeople.disabled=busy;
+      btnShowPeopleList.disabled=busy;
+      btnConfirmPeopleYes.disabled=busy;
+      btnConfirmPeopleNo.disabled=busy;
+      peopleStatus.innerHTML=message?`<span class="spinner"></span><span>${esc(message)}</span>`:"";
+    };
+    const openPeopleModal=()=>{
+      if(!ensurePeopleManagementAccess()) return;
+      peopleError.textContent="";
+      peopleStatus.innerHTML="";
+      pendingPersonPayload=null;
+      togglePeopleConfirm(false);
+      setPeopleBusy(false);
+      peopleModal.classList.add("open");
+      peopleModal.setAttribute("aria-hidden","false");
+      setTimeout(()=>personName.focus(),0);
+    };
+    const closePeopleModal=()=>{
+      peopleModal.classList.remove("open");
+      peopleModal.setAttribute("aria-hidden","true");
+      peopleError.textContent="";
+      peopleStatus.innerHTML="";
+      pendingPersonPayload=null;
+      togglePeopleConfirm(false);
+      setPeopleBusy(false);
+    };
+    const openPeopleListModal=()=>{peopleListModal.classList.add("open");peopleListModal.setAttribute("aria-hidden","false")};
+    const closePeopleListModal=()=>{peopleListModal.classList.remove("open");peopleListModal.setAttribute("aria-hidden","true");peopleDeleteConfirm.classList.add("hidden");peopleSaveConfirm.classList.add("hidden");pendingDeletePerson=null};
+    const closeLessonsLearnedModal=()=>{
+      lessonsLearnedModal.classList.remove("open");
+      lessonsLearnedModal.setAttribute("aria-hidden","true");
+      lessonsLearnedStatus.textContent="";
+    };
+    function ensureLessonsLearnedCaseState(key){
+      const existing=lessonsLearnedSelection[key];
+      if(existing&&typeof existing==="object"){
+        existing.selected=!!existing.selected;
+        existing.excluded=!!existing.excluded;
+        existing.assigneeOptionValue=(existing.assigneeOptionValue||"").trim();
+        existing.assigneeName=(existing.assigneeName||"").trim();
+        existing.assigneeDepartment=(existing.assigneeDepartment||"").trim();
+        existing.assigneeNormalizedName=(existing.assigneeNormalizedName||"").trim();
+        return existing;
+      }
+      const state={selected:!!existing,excluded:false,assigneeOptionValue:"",assigneeName:"",assigneeDepartment:"",assigneeNormalizedName:""};
+      lessonsLearnedSelection[key]=state;
+      return state;
+    }
+
+    function invalidateLessonsLearnedPeopleDirectory(){
+      lessonsLearnedPeopleRows=[];
+      lessonsLearnedPeopleByOptionValue={};
+      lessonsLearnedPeopleOptions.innerHTML="";
+    }
+
+    function resetLessonsLearnedSavedCases(){
+      lessonsLearnedSavedCases={};
+      lessonsLearnedSavedCasesFetched=false;
+      lessonsLearnedSavedCasesKeySignature="";
+    }
+
+    function applyLessonsLearnedSavedCases(rows,replaceExisting=true){
+      const next=replaceExisting?{}:{...lessonsLearnedSavedCases};
+      (Array.isArray(rows)?rows:[]).forEach(row=>{
+        const key=((row?.case_key)||"").toString().trim().toLowerCase();
+        if(!key) return;
+        next[key]=row;
+        const state=ensureLessonsLearnedCaseState(key);
+        state.selected=false;
+        state.excluded=false;
+      });
+      lessonsLearnedSavedCases=next;
+      lessonsLearnedSavedCasesFetched=true;
+    }
+
+    async function loadLessonsLearnedSavedCases(caseKeys){
+      try{
+        const res=await fetch("/api/analysis/lessons-learned-generated",{
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({
+            case_keys:Array.isArray(caseKeys)?caseKeys:[]
+          })
+        });
+        const data=await res.json();
+        if(!res.ok||!data.ok) throw new Error(data?.error||"Nie udalo sie pobrac zapisanych przypadkow Lessons Learned.");
+        applyLessonsLearnedSavedCases(data.cases||[]);
+        return true;
+      }catch(err){
+        resetLessonsLearnedSavedCases();
+        lessonsLearnedStatus.textContent=`Blad ladowania zapisanych przypadkow: ${err}`;
+        return false;
+      }
+    }
+
+    function applyLessonsLearnedPeopleDirectory(rows){
+      const normalizedRows=Array.isArray(rows)?rows:[];
+      lessonsLearnedPeopleRows=normalizedRows;
+      lessonsLearnedPeopleByOptionValue={};
+      lessonsLearnedPeopleOptions.innerHTML="";
+      normalizedRows.forEach(row=>{
+        const optionValue=buildLessonsLearnedPersonOptionValue(row);
+        if(!optionValue) return;
+        lessonsLearnedPeopleByOptionValue[optionValue]=row;
+        const option=document.createElement("option");
+        option.value=optionValue;
+        lessonsLearnedPeopleOptions.appendChild(option);
+      });
+    }
+
+    async function ensureLessonsLearnedPeopleDirectory(force=false){
+      if(lessonsLearnedPeopleRows.length&&!force) return true;
+      try{
+        const res=await fetch("/api/people");
+        const data=await res.json();
+        if(!data.ok) throw new Error(data.error||"Nie udalo sie pobrac listy pracownikow.");
+        applyLessonsLearnedPeopleDirectory(Array.isArray(data.people)?data.people:[]);
+        return true;
+      }catch(err){
+        invalidateLessonsLearnedPeopleDirectory();
+        lessonsLearnedStatus.textContent=`Blad ladowania listy pracownikow: ${err}`;
+        return false;
+      }
+    }
+
+    function applyLessonsLearnedAssigneeValue(key,value){
+      const state=ensureLessonsLearnedCaseState(key);
+      const cleanValue=(value||"").trim();
+      const record=lessonsLearnedPeopleByOptionValue[cleanValue]||null;
+      state.assigneeOptionValue=cleanValue;
+      state.assigneeName=record?.name||"";
+      state.assigneeDepartment=record?.department||"";
+      state.assigneeNormalizedName=record?.normalized_name||"";
+    }
+
+    function getCurrentAnalysisViewData(){
+      return buildAnalysisViewData(getFilteredAnalysisItems());
+    }
+
+    function getGlobalAnalysisCharts(){
+      if(analysisData?.charts) return analysisData.charts;
+      return buildAnalysisViewData(analysisItems).charts||{};
+    }
+
+    function getCurrentRepeatedCases(){
+      return getCurrentAnalysisViewData().repeated_cases||[];
+    }
+
+    function getLessonsLearnedDepartmentsForCase(row){
+      const departments=new Set();
+      [...(row?.owner_departments||[]),...(row?.creator_departments||[])].forEach(entry=>{
+        const department=(entry?.department||"").toString().trim().toUpperCase();
+        if(department) departments.add(department);
+      });
+      return [...departments];
+    }
+
+    function buildLessonsLearnedDashboardData(){
+      const repeatedCases=getCurrentRepeatedCases();
+      const departmentRows={};
+      const activeDepartment=(selectedAnalysisDepartment||"").trim().toUpperCase();
+      const summary={total:repeatedCases.length,reviewed:0,candidate:0,excluded:0};
+      repeatedCases.forEach(row=>{
+        const caseKey=getLessonsLearnedCaseKey(row);
+        const savedCase=lessonsLearnedSavedCases[caseKey]||null;
+        const status=((savedCase?.decision_status)||"").toString().trim().toLowerCase();
+        const isCandidate=status==="candidate";
+        const isExcluded=status==="excluded";
+        const isReviewed=isCandidate||isExcluded;
+        if(isReviewed) summary.reviewed+=1;
+        if(isCandidate) summary.candidate+=1;
+        if(isExcluded) summary.excluded+=1;
+        const rowDepartments=getLessonsLearnedDepartmentsForCase(row);
+        const departments=activeDepartment
+          ? [activeDepartment]
+          : (rowDepartments.length?rowDepartments:["Brak dzialu"]);
+        departments.forEach(department=>{
+          if(!departmentRows[department]){
+            departmentRows[department]={department,total:0,reviewed:0,candidate:0,excluded:0};
+          }
+          const target=departmentRows[department];
+          target.total+=1;
+          if(isReviewed) target.reviewed+=1;
+          if(isCandidate) target.candidate+=1;
+          if(isExcluded) target.excluded+=1;
+        });
+      });
+      return {
+        summary,
+        departments:Object.values(departmentRows).sort((a,b)=>{
+          if(b.total!==a.total) return b.total-a.total;
+          if(b.reviewed!==a.reviewed) return b.reviewed-a.reviewed;
+          return (a.department||"").localeCompare(b.department||"","pl",{numeric:true,sensitivity:"base"});
+        })
+      };
+    }
+
+    function renderLessonsLearnedDashboard(){
+      const dashboardData=buildLessonsLearnedDashboardData();
+      const summary=dashboardData.summary||{total:0,reviewed:0,candidate:0,excluded:0};
+      const reviewedWithoutLessons=Math.max(0,(summary.reviewed||0)-(summary.candidate||0));
+      const warningNote=lessonsLearnedSavedCasesFetched
+        ? ""
+        : "Statusy LL odswieza sie po zaladowaniu zapisanych decyzji.";
+      llKpiGrid.innerHTML=[
+        {label:"Powtarzajace sie problemy",value:summary.total,note:selectedAnalysisDepartment?"dla wybranego dzialu":"w aktualnym widoku"},
+        {label:"Przejrzane",value:`${summary.reviewed} / ${summary.total}`,note:`${formatPercent(summary.reviewed,summary.total)} wszystkich problemow`},
+        {label:"Odklikane LL",value:`${summary.candidate} / ${summary.total}`,note:`${formatPercent(summary.candidate,summary.total)} wszystkich problemow`},
+        {label:"Przejrzane bez LL",value:`${reviewedWithoutLessons} / ${summary.total}`,note:warningNote||`${formatPercent(reviewedWithoutLessons,summary.total)} wszystkich problemow`,noteClass:warningNote?" warning":""},
+      ].map(card=>`<div class="ll-kpi"><span class="ll-kpi-label">${esc(card.label)}</span><strong class="ll-kpi-value">${esc(card.value)}</strong><span class="ll-kpi-note${card.noteClass||""}">${esc(card.note)}</span></div>`).join("");
+
+      if(!dashboardData.departments.length){
+        llVerticalChart.innerHTML='<div class="ll-chart-empty">Brak powtarzajacych sie problemow dla aktualnego widoku analizy.</div>';
+        llDepartmentSummaryTable.innerHTML='<div class="empty">Brak danych.</div>';
+        return;
+      }
+
+      llVerticalChart.innerHTML=dashboardData.departments.map(row=>{
+        const reviewedWithoutLl=Math.max(0,row.reviewed-row.candidate);
+        const pending=Math.max(0,row.total-row.reviewed);
+        const llHeight=row.total?(row.candidate/row.total)*100:0;
+        const reviewedHeight=row.total?(reviewedWithoutLl/row.total)*100:0;
+        const pendingHeight=row.total?(pending/row.total)*100:0;
+        const llLabel=llHeight>=11?`${row.candidate}`:"";
+        const reviewedLabel=reviewedHeight>=11?`${reviewedWithoutLl}`:"";
+        const pendingLabel=pendingHeight>=14?`${pending}`:"";
+        return `<article class="ll-bar-card"><div class="ll-bar-shell"><div class="ll-bar"><div class="ll-segment ll" style="height:${llHeight}%"><span class="ll-segment-label">${esc(llLabel)}</span></div><div class="ll-segment reviewed" style="height:${reviewedHeight}%"><span class="ll-segment-label">${esc(reviewedLabel)}</span></div><div class="ll-segment pending" style="height:${pendingHeight}%"><span class="ll-segment-label">${esc(pendingLabel)}</span></div></div></div><div class="ll-bar-caption"><strong>${esc(row.department)}</strong><span>${esc(`${row.total} problemow`)}</span></div><div class="ll-bar-metrics"><span>Przejrzane: ${esc(`${row.reviewed} / ${row.total}`)} (${esc(formatPercent(row.reviewed,row.total))})</span><span>LL: ${esc(`${row.candidate} / ${row.total}`)} (${esc(formatPercent(row.candidate,row.total))})</span></div></article>`;
+      }).join("");
+
+      simpleTable(
+        "llDepartmentSummaryTable",
+        ["Dzial","Powtarzajace sie problemy","Przejrzane","Odklikane LL","Nieprzejrzane"],
+        dashboardData.departments.map(row=>{
+          const pending=Math.max(0,row.total-row.reviewed);
+          return [
+            `<strong>${esc(row.department)}</strong>`,
+            esc(row.total),
+            `<strong>${esc(`${row.reviewed} / ${row.total}`)}</strong><div class="muted" style="font-size:12px">${esc(formatPercent(row.reviewed,row.total))}</div>`,
+            `<strong>${esc(`${row.candidate} / ${row.total}`)}</strong><div class="muted" style="font-size:12px">${esc(formatPercent(row.candidate,row.total))}</div>`,
+            `<strong>${esc(`${pending} / ${row.total}`)}</strong><div class="muted" style="font-size:12px">${esc(formatPercent(pending,row.total))}</div>`
+          ];
+        })
+      );
+    }
+
+    async function syncLessonsLearnedSavedCasesForDashboard(force=false){
+      const caseKeys=Array.from(new Set(getCurrentRepeatedCases().map(row=>getLessonsLearnedCaseKey(row)).filter(Boolean))).sort();
+      const nextSignature=caseKeys.join("|");
+      if(!caseKeys.length){
+        lessonsLearnedSavedCasesKeySignature="";
+        resetLessonsLearnedSavedCases();
+        renderLessonsLearnedDashboard();
+        return;
+      }
+      if(!force&&nextSignature===lessonsLearnedSavedCasesKeySignature) return;
+      lessonsLearnedSavedCasesKeySignature=nextSignature;
+      const loaded=await loadLessonsLearnedSavedCases(caseKeys);
+      if(!loaded){
+        lessonsLearnedSavedCasesKeySignature="";
+        renderLessonsLearnedDashboard();
+        return;
+      }
+      renderAnalysisV2();
+    }
+
+    function pruneLessonsLearnedSelection(){
+      const validKeys=new Set(getCurrentRepeatedCases().map(row=>getLessonsLearnedCaseKey(row)).filter(Boolean));
+      Object.keys(lessonsLearnedSelection).forEach(key=>{
+        if(!validKeys.has(key)) delete lessonsLearnedSelection[key];
+      });
+    }
+
+    function getSelectedLessonsLearnedCases(){
+      const selectedKeys=new Set(Object.entries(lessonsLearnedSelection).filter(([,state])=>!!(typeof state==="object"?state?.selected:state)).map(([key])=>key));
+      return getCurrentRepeatedCases().filter(row=>{
+        const key=getLessonsLearnedCaseKey(row);
+        return key&&!lessonsLearnedSavedCases[key]&&selectedKeys.has(key);
+      });
+    }
+
+    function getExcludedLessonsLearnedCases(){
+      const excludedKeys=new Set(Object.entries(lessonsLearnedSelection).filter(([,state])=>!!(typeof state==="object"&&state?.excluded)).map(([key])=>key));
+      return getCurrentRepeatedCases().filter(row=>{
+        const key=getLessonsLearnedCaseKey(row);
+        return key&&!lessonsLearnedSavedCases[key]&&excludedKeys.has(key);
+      });
+    }
+
+    function prepareLessonsLearnedCasesForExport(){
+      const selectedCases=getSelectedLessonsLearnedCases();
+      const missingAssignees=[];
+      const invalidAssignees=[];
+      const preparedCases=selectedCases.map(row=>{
+        const key=getLessonsLearnedCaseKey(row);
+        const state=ensureLessonsLearnedCaseState(key);
+        if(!state.assigneeNormalizedName||!state.assigneeName){
+          if(state.assigneeOptionValue) invalidAssignees.push(row.title||key);
+          else missingAssignees.push(row.title||key);
+        }
+        return {
+          ...row,
+          responsible_de_name:state.assigneeName,
+          responsible_de_department:state.assigneeDepartment,
+          responsible_de_normalized_name:state.assigneeNormalizedName,
+        };
+      });
+      return {preparedCases,missingAssignees,invalidAssignees};
+    }
+
+    function prepareLessonsLearnedExcludedCasesForSave(){
+      return getExcludedLessonsLearnedCases().map(row=>({
+        ...row
+      }));
+    }
+
+    function renderLessonsLearnedRows(){
+      const repeatedCases=getCurrentRepeatedCases();
+      pruneLessonsLearnedSelection();
+      lessonsLearnedBody.innerHTML="";
+      if(!repeatedCases.length){
+        lessonsLearnedBody.innerHTML='<tr><td class="empty" colspan="7">Brak powtarzajacych sie przypadkow dla aktualnego widoku.</td></tr>';
+        btnSaveLessonsLearnedPdf.disabled=true;
+        return;
+      }
+      repeatedCases.forEach(row=>{
+        const key=getLessonsLearnedCaseKey(row);
+        const state=ensureLessonsLearnedCaseState(key);
+        const savedCase=lessonsLearnedSavedCases[key]||null;
+        const decisionStatus=((savedCase?.decision_status)||"").toString().trim().toLowerCase();
+        const isSavedCandidate=decisionStatus==="candidate";
+        const isSavedExcluded=decisionStatus==="excluded";
+        const isSaved=isSavedCandidate||isSavedExcluded;
+        if(isSaved){
+          state.selected=false;
+          state.excluded=false;
+        }
+        const checked=!!state.selected;
+        const excludedChecked=!!state.excluded;
+        const personDisabled=isSaved||excludedChecked;
+        const hasTypedValue=!!state.assigneeOptionValue;
+        const hasValidAssignee=!!state.assigneeNormalizedName;
+        const assigneeInvalid=!personDisabled&&hasTypedValue&&!hasValidAssignee;
+        const hintClass=assigneeInvalid?"lessons-person-hint error":"lessons-person-hint";
+        const hintText=isSavedExcluded
+          ? "Przypadek zostal juz przeanalizowany i wykluczony jako Lessons Learned."
+          : isSavedCandidate
+          ? `Wybrano: ${savedCase?.responsible_de_name||state.assigneeName||"-"} (${savedCase?.responsible_de_department||state.assigneeDepartment||"-"})`
+          : excludedChecked
+          ? "Przypadek zostanie zapisany jako wykluczony z Lessons Learned."
+          : hasValidAssignee
+          ? `Wybrano: ${state.assigneeName} (${state.assigneeDepartment||"-"})`
+          : hasTypedValue
+            ? "Wybierz osobe z listy rozwijanej."
+            : "Wyszukaj i wybierz osobe realizujaca kandydata LL.";
+        const tr=document.createElement("tr");
+        if(isSaved) tr.className="lessons-generated-row";
+        const generatedNote=isSavedCandidate
+          ? `<div class="lessons-generated-note">Do tego przypadku wygenerowano LL Candidate ${esc(savedCase.ll_candidate_id)}.</div>`
+          : isSavedExcluded
+          ? '<div class="lessons-generated-note">Przypadek zostal juz przeanalizowany i wykluczony jako Lessons Learned.</div>'
+          : "";
+        tr.innerHTML=`<td><strong>${esc(row.title||"")}</strong><div class="muted" style="font-size:12px;margin-top:4px">${esc(row.normalized_summary||"")}</div>${generatedNote}</td><td>${esc(row.type||"")}</td><td>${esc(row.count??0)}</td><td>${projectBadgeList(row.projects||[])}</td><td class="lessons-checkbox"><input type="checkbox" data-lessons-case="${esc(key)}" ${checked?"checked":""} ${isSaved?"disabled":""} aria-label="Oznacz przypadek ${esc(row.title||key)} jako Lessons Learned"></td><td class="lessons-checkbox lessons-exclusion-cell"><input type="checkbox" data-lessons-exclusion="${esc(key)}" ${excludedChecked?"checked":""} ${isSaved?"disabled":""} aria-label="Wyklucz przypadek ${esc(row.title||key)} z Lessons Learned"></td><td class="lessons-person-cell"><label class="lessons-person-field"><input class="${assigneeInvalid?"invalid":""}" type="text" list="lessonsLearnedPeopleOptions" data-lessons-person="${esc(key)}" value="${esc(isSavedCandidate?buildLessonsLearnedPersonOptionValue({name:savedCase?.responsible_de_name||state.assigneeName,department:savedCase?.responsible_de_department||state.assigneeDepartment}):(personDisabled?"":(state.assigneeOptionValue||"")))}" placeholder="Wyszukaj osobe z bazy danych" ${personDisabled?"disabled":""}><span class="${hintClass}">${esc(hintText)}</span></label></td>`;
+        lessonsLearnedBody.appendChild(tr);
+      });
+      lessonsLearnedBody.querySelectorAll("[data-lessons-case]").forEach(input=>input.addEventListener("change",()=>{
+        const key=input.dataset.lessonsCase||"";
+        if(!key) return;
+        const state=ensureLessonsLearnedCaseState(key);
+        state.selected=input.checked;
+        if(input.checked) state.excluded=false;
+        renderLessonsLearnedRows();
+      }));
+      lessonsLearnedBody.querySelectorAll("[data-lessons-exclusion]").forEach(input=>input.addEventListener("change",()=>{
+        const key=input.dataset.lessonsExclusion||"";
+        if(!key) return;
+        const state=ensureLessonsLearnedCaseState(key);
+        state.excluded=input.checked;
+        if(input.checked) state.selected=false;
+        renderLessonsLearnedRows();
+      }));
+      lessonsLearnedBody.querySelectorAll("[data-lessons-person]").forEach(input=>{
+        const updateValue=()=>{
+          const key=input.dataset.lessonsPerson||"";
+          if(!key) return;
+          applyLessonsLearnedAssigneeValue(key,input.value);
+          renderLessonsLearnedRows();
+        };
+        input.addEventListener("change",updateValue);
+        input.addEventListener("blur",updateValue);
+      });
+      btnSaveLessonsLearnedPdf.disabled=getSelectedLessonsLearnedCases().length===0&&getExcludedLessonsLearnedCases().length===0;
+    }
+
+    async function openLessonsLearnedModal(){
+      const caseKeys=getCurrentRepeatedCases().map(row=>getLessonsLearnedCaseKey(row)).filter(Boolean);
+      lessonsLearnedStatus.innerHTML='<span class="spinner"></span><span>Ladowanie listy pracownikow i zapisanych przypadkow...</span>';
+      lessonsLearnedModal.classList.add("open");
+      lessonsLearnedModal.setAttribute("aria-hidden","false");
+      const [peopleLoaded,savedCasesLoaded]=await Promise.all([
+        ensureLessonsLearnedPeopleDirectory(),
+        loadLessonsLearnedSavedCases(caseKeys),
+      ]);
+      renderLessonsLearnedRows();
+      if(peopleLoaded&&savedCasesLoaded) lessonsLearnedStatus.textContent="";
+      else{
+        btnSaveLessonsLearnedPdf.disabled=true;
+      }
+    }
+
+    function resetPeopleEditState(){
+      peopleEditMode=false;
+      peopleEditSelection={};
+      peopleEditDrafts={};
+      peopleSaveConfirm.classList.add("hidden");
+      btnSavePeopleChanges.classList.add("hidden");
+      btnToggleEditPeople.textContent="Edytuj";
+    }
+
+    function ensurePeopleDraft(row){
+      if(!peopleEditDrafts[row.normalized_name]){
+        peopleEditDrafts[row.normalized_name]={name:row.name||"",department:row.department||"",jazz_login:row.jazz_login||""};
+      }
+      return peopleEditDrafts[row.normalized_name];
+    }
+
+    function setupPeopleForm(){
+      const peopleTitleNote=document.querySelector("#peopleTitle + p");
+      const nameLabel=document.querySelector('label[for="personName"]');
+      const departmentLabel=document.querySelector('label[for="personDepartment"]');
+      const nameField=personName.closest(".field");
+
+      if(peopleTitleNote) peopleTitleNote.textContent="Wpisz nazwisko, imię, dział i login Jazz. Po zatwierdzeniu pojawi się dodatkowe potwierdzenie.";
+      if(nameLabel) nameLabel.textContent="Nazwisko";
+      personName.placeholder="Np. Kowalski";
+      if(departmentLabel) departmentLabel.textContent="Dział";
+
+      if(!document.getElementById("personFirstName") && nameField){
+        const firstNameField=document.createElement("div");
+        firstNameField.className="field";
+        firstNameField.innerHTML='<label for="personFirstName">Imię</label><input id="personFirstName" type="text" placeholder="Np. Jan">';
+        nameField.insertAdjacentElement("afterend",firstNameField);
+      }
+
+      const firstNameField=document.getElementById("personFirstName")?.closest(".field")||nameField;
+      if(!document.getElementById("personJazzLogin") && firstNameField){
+        const jazzLoginField=document.createElement("div");
+        jazzLoginField.className="field";
+        jazzLoginField.innerHTML='<label for="personJazzLogin">Login Jazz</label><input id="personJazzLogin" type="text" placeholder="Np. kowalskij">';
+        firstNameField.insertAdjacentElement("afterend",jazzLoginField);
+      }
+
+      personFirstName=document.getElementById("personFirstName");
+      personJazzLogin=document.getElementById("personJazzLogin");
+    }
+
+    function updateLayout(){
+      const isAnalysis=currentTab==="analysis";
+      searchBar.classList.toggle("hidden",isAnalysis);
+      dataView.classList.toggle("hidden",isAnalysis);
+      analysisView.classList.toggle("hidden",!isAnalysis);
+      analysisDepartmentFilterWrap.classList.toggle("hidden",!isAnalysis);
+      topNote.textContent=isAnalysis?"Analiza AI łączy dane Owner i Creator oraz pokazuje top departmenty i tematy.":"Kliknij nagłówek kolumny, aby sortować i filtrować.";
+      if(!isAnalysis) closeAnalysisDepartmentFilter();
+      updateAnalysisExportButton();
+    }
+
+    function normalizeSummaryForAnalysis(value){
+      return (value||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\b[a-z]{1,4}-\d+\b/g," ").replace(/\b(?:wi|id)\s*[:#-]?\s*\d+\b/g," ").replace(/\b\d{4,}\b/g," ").replace(/[^a-z0-9]+/g," ").replace(/\s+/g," ").trim();
+    }
+
+    function classifyAnalysisType(value){
+      const text=(value||"").trim().toLowerCase();
+      if(text.includes("defect")) return "Defect";
+      if(text.includes("finding")) return "Finding";
+      return "Other";
+    }
+
+    function sortCounterEntries(counter){
+      return Object.entries(counter||{}).sort((a,b)=>{
+        if(b[1]!==a[1]) return b[1]-a[1];
+        return a[0].localeCompare(b[0],"pl",{sensitivity:"base",numeric:true});
+      });
+    }
+
+    function getAnalysisManagerByDepartment(department){
+      const clean=(department||"").trim().toUpperCase();
+      if(!clean) return "";
+      const rows=[
+        ...(analysisData?.department_split||[]),
+        ...(analysisData?.charts?.owner_department_split||[]),
+        ...(analysisData?.charts?.creator_department_split||[]),
+      ];
+      const match=rows.find(row=>((row?.department)||"").trim().toUpperCase()===clean);
+      return match?.manager||"";
+    }
+
+    function getAnalysisDepartmentOptions(){
+      const rows=[];
+      const seen=new Set();
+      const addDepartment=(department,manager="")=>{
+        const clean=(department||"").trim().toUpperCase();
+        if(!clean||seen.has(clean)) return;
+        seen.add(clean);
+        rows.push({department:clean,manager:manager||getAnalysisManagerByDepartment(clean)||""});
+      };
+      (analysisData?.department_split||[]).forEach(row=>addDepartment(row?.department,row?.manager));
+      analysisItems.forEach(item=>{
+        addDepartment(item?.owner_department);
+        addDepartment(item?.creator_department);
+      });
+      return rows.sort((a,b)=>a.department.localeCompare(b.department,"pl",{sensitivity:"base",numeric:true}));
+    }
+
+    function openAnalysisDepartmentFilter(){
+      renderAnalysisDepartmentFilterOptions();
+      analysisDepartmentFilterMenu.classList.remove("hidden");
+      analysisDepartmentFilterMenu.setAttribute("aria-hidden","false");
+      analysisDepartmentFilterButton.setAttribute("aria-expanded","true");
+    }
+
+    function closeAnalysisDepartmentFilter(){
+      analysisDepartmentFilterMenu.classList.add("hidden");
+      analysisDepartmentFilterMenu.setAttribute("aria-hidden","true");
+      analysisDepartmentFilterButton.setAttribute("aria-expanded","false");
+    }
+
+    function toggleAnalysisDepartmentFilter(){
+      if(analysisDepartmentFilterMenu.classList.contains("hidden")) openAnalysisDepartmentFilter();
+      else closeAnalysisDepartmentFilter();
+    }
+
+    function renderAnalysisDepartmentFilterOptions(){
+      const rows=getAnalysisDepartmentOptions();
+      analysisDepartmentFilterBody.innerHTML="";
+      if(!rows.length){
+        analysisDepartmentFilterBody.innerHTML='<tr><td class="empty" colspan="3">Brak działów w analizie.</td></tr>';
+        return;
+      }
+      for(const row of rows){
+        const checked=selectedAnalysisDepartment===row.department;
+        const tr=document.createElement("tr");
+        tr.innerHTML=`<td class="analysis-filter-checkbox"><input type="checkbox" ${checked?"checked":""} aria-label="Wybierz dział ${esc(row.department)}"></td><td>${esc(row.department)}</td><td>${esc(row.manager||"-")}</td>`;
+        const applySelection=()=>applyAnalysisDepartmentFilter(checked?"":row.department);
+        tr.addEventListener("click",e=>{
+          if(e.target.tagName==="INPUT") return;
+          applySelection();
+        });
+        tr.querySelector("input").addEventListener("change",applySelection);
+        analysisDepartmentFilterBody.appendChild(tr);
+      }
+    }
+
+    function applyAnalysisDepartmentFilter(department){
+      selectedAnalysisDepartment=(department||"").trim().toUpperCase();
+      analysisDepartmentFilterValue.textContent=selectedAnalysisDepartment||"Wszystkie działy";
+      renderAnalysisDepartmentFilterOptions();
+      renderAnalysisV2();
+      closeAnalysisDepartmentFilter();
+    }
+
+    function clearAnalysisDepartmentFilter(){
+      applyAnalysisDepartmentFilter("");
+    }
+
+    function getFilteredAnalysisItems(){
+      if(!selectedAnalysisDepartment) return [...analysisItems];
+      return analysisItems.filter(item=>{
+        const owner=(item?.owner_department||"").trim().toUpperCase();
+        const creator=(item?.creator_department||"").trim().toUpperCase();
+        return owner===selectedAnalysisDepartment||creator===selectedAnalysisDepartment;
+      });
+    }
+
+    function updateAnalysisExportButton(){
+      const filteredCount=currentTab==="analysis"?getFilteredAnalysisItems().length:0;
+      const repeatedCases=currentTab==="analysis"?getCurrentRepeatedCases():[];
+      btnExportAnalysisPdf.disabled=loading||currentTab!=="analysis"||filteredCount===0;
+      btnAnalyzeLessonsLearned.disabled=loading||currentTab!=="analysis"||repeatedCases.length===0;
+      btnSaveLessonsLearnedPdf.disabled=loading||(getSelectedLessonsLearnedCases().length===0&&getExcludedLessonsLearnedCases().length===0);
+    }
+
+    function buildAnalysisPdfFallbackFilename(){
+      const now=new Date();
+      const dd=String(now.getDate()).padStart(2,"0");
+      const mm=String(now.getMonth()+1).padStart(2,"0");
+      const yyyy=String(now.getFullYear());
+      const department=(selectedAnalysisDepartment||"Wszystkie_Dzialy").replace(/[^A-Za-z0-9]+/g,"_").replace(/^_+|_+$/g,"")||"Wszystkie_Dzialy";
+      return `raport_${department}_${dd}-${mm}-${yyyy}_Defects_Findings.pdf`;
+    }
+
+    function buildLessonsLearnedPdfFallbackFilename(){
+      const now=new Date();
+      const dd=String(now.getDate()).padStart(2,"0");
+      const mm=String(now.getMonth()+1).padStart(2,"0");
+      const yyyy=String(now.getFullYear());
+      const department=(selectedAnalysisDepartment||"Wszystkie_Dzialy").replace(/[^A-Za-z0-9]+/g,"_").replace(/^_+|_+$/g,"")||"Wszystkie_Dzialy";
+      return `lessons_learned_${department}_${dd}-${mm}-${yyyy}.pdf`;
+    }
+
+    function parseDownloadFilename(disposition,fallback){
+      if(!disposition) return fallback;
+      const utfMatch=disposition.match(/filename\*=UTF-8''([^;]+)/i);
+      if(utfMatch?.[1]){
+        try{return decodeURIComponent(utfMatch[1]);}catch(_err){}
+      }
+      const plainMatch=disposition.match(/filename="?([^"]+)"?/i);
+      return plainMatch?.[1]||fallback;
+    }
+
+    async function triggerPdfDownload(res,fallbackFilename){
+      const downloadBlob=await res.blob();
+      const downloadUrl=URL.createObjectURL(downloadBlob);
+      const downloadLink=document.createElement("a");
+      downloadLink.href=downloadUrl;
+      downloadLink.download=parseDownloadFilename(res.headers.get("Content-Disposition"),fallbackFilename);
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      downloadLink.remove();
+      setTimeout(()=>URL.revokeObjectURL(downloadUrl),0);
+    }
+
+    async function exportCurrentAnalysisPdf(){
+      const filteredItems=getFilteredAnalysisItems();
+      if(!filteredItems.length){
+        setStatus("Brak danych do eksportu PDF dla aktualnego filtra.","warning");
+        updateAnalysisExportButton();
+        return;
+      }
+      const originalLabel=btnExportAnalysisPdf.textContent;
+      btnExportAnalysisPdf.disabled=true;
+      btnExportAnalysisPdf.textContent="Przygotowywanie PDF...";
+      setStatus("Przygotowywanie pliku PDF dla aktualnego widoku analizy...");
+      try{
+        const res=await fetch("/api/analysis/export-pdf",{
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({department:selectedAnalysisDepartment,items:filteredItems})
+        });
+        if(!res.ok){
+          const contentType=res.headers.get("Content-Type")||"";
+          let errorMessage="Nie udalo sie przygotowac pliku PDF.";
+          if(contentType.includes("application/json")){
+            const payload=await res.json();
+            errorMessage=payload?.error||errorMessage;
+          }else{
+            const text=await res.text();
+            if(text) errorMessage=text;
+          }
+          throw new Error(errorMessage);
+        }
+        await triggerPdfDownload(res,buildAnalysisPdfFallbackFilename());
+        setStatus(`Pobrano raport PDF dla widoku ${selectedAnalysisDepartment||"Wszystkie dzialy"}.`,"success");
+      }catch(err){
+        setStatus(`Blad eksportu PDF: ${err}`,"error");
+      }finally{
+        btnExportAnalysisPdf.textContent=originalLabel;
+        updateAnalysisExportButton();
+      }
+    }
+
+    async function persistLessonsLearnedExclusions(excludedCases){
+      if(!excludedCases.length) return {saved_cases:[],saved_count:0};
+      const res=await fetch("/api/analysis/save-lessons-learned-exclusions",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+          cases:excludedCases
+        })
+      });
+      const data=await res.json();
+      if(!res.ok||!data.ok) throw new Error(data?.error||"Nie udalo sie zapisac wykluczonych przypadkow Lessons Learned.");
+      applyLessonsLearnedSavedCases(data.saved_cases||[],false);
+      renderLessonsLearnedDashboard();
+      return data;
+    }
+
+    async function saveLessonsLearned(){
+      const {preparedCases,missingAssignees,invalidAssignees}=prepareLessonsLearnedCasesForExport();
+      const excludedCases=prepareLessonsLearnedExcludedCasesForSave();
+      if(!preparedCases.length&&!excludedCases.length){
+        lessonsLearnedStatus.textContent="Zaznacz co najmniej jeden przypadek Lessons Learned albo wykluczenie przypadku Lessons Learned.";
+        updateAnalysisExportButton();
+        return;
+      }
+      if(preparedCases.length&&missingAssignees.length){
+        lessonsLearnedStatus.textContent=`Wybierz Odpowiedzialnosc DE dla kazdego zaznaczonego przypadku. Brakuje dla: ${missingAssignees.slice(0,3).join(", ")}${missingAssignees.length>3?"...":""}`;
+        updateAnalysisExportButton();
+        return;
+      }
+      if(preparedCases.length&&invalidAssignees.length){
+        lessonsLearnedStatus.textContent=`Dla czesci przypadkow wpisano osobe spoza listy. Popraw: ${invalidAssignees.slice(0,3).join(", ")}${invalidAssignees.length>3?"...":""}`;
+        updateAnalysisExportButton();
+        return;
+      }
+      if(!sessionState.authenticated){
+        lessonsLearnedStatus.textContent="Zaloguj sie do Jazz przed zapisaniem raportu Lessons Learned.";
+        return;
+      }
+      const originalLabel=btnSaveLessonsLearnedPdf.textContent;
+      btnSaveLessonsLearnedPdf.disabled=true;
+      btnSaveLessonsLearnedPdf.textContent="Zapisywanie...";
+      lessonsLearnedStatus.innerHTML='<span class="spinner"></span><span>Zapisywanie decyzji Lessons Learned...</span>';
+      try{
+        let excludedSaveData={saved_cases:[],saved_count:0};
+        if(preparedCases.length){
+          const pdfRes=await fetch("/api/analysis/export-lessons-learned-pdf",{
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({
+              department:selectedAnalysisDepartment,
+              cases:preparedCases
+            })
+          });
+          if(!pdfRes.ok){
+            const contentType=pdfRes.headers.get("Content-Type")||"";
+            let errorMessage="Nie udalo sie przygotowac raportu Lessons Learned.";
+            if(contentType.includes("application/json")){
+              const payload=await pdfRes.json();
+              errorMessage=payload?.error||errorMessage;
+            }else{
+              const text=await pdfRes.text();
+              if(text) errorMessage=text;
+            }
+            throw new Error(errorMessage);
+          }
+          await triggerPdfDownload(pdfRes,buildLessonsLearnedPdfFallbackFilename());
+          lessonsLearnedStatus.innerHTML='<span class="spinner"></span><span>Tworzenie LL Candidate w Jazz...</span>';
+          const candidateRes=await fetch("/api/analysis/create-lessons-learned-candidates",{
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({
+              cases:preparedCases
+            })
+          });
+          const data=await candidateRes.json();
+          if(!candidateRes.ok||!data.ok){
+            throw new Error(data?.error||"Nie udalo sie utworzyc LL Candidate.");
+          }
+          applyLessonsLearnedSavedCases(data.saved_cases||[],false);
+          if(excludedCases.length){
+            lessonsLearnedStatus.innerHTML='<span class="spinner"></span><span>Zapisywanie wykluczonych przypadkow Lessons Learned...</span>';
+            excludedSaveData=await persistLessonsLearnedExclusions(excludedCases);
+          }
+          renderLessonsLearnedDashboard();
+          renderLessonsLearnedRows();
+          const excludedSuffix=excludedSaveData.saved_count?` Zapisano tez ${excludedSaveData.saved_count} wykluczen.`:"";
+          if(data.status==="ok"){
+            const ids=(data.created_ids||[]).filter(Boolean);
+            const message=`Zapisano raport Lessons Learned i utworzono ${data.created_count||0} LL Candidate${ids.length?`: ${ids.join(", ")}`:""}.${excludedSuffix}`;
+            if(data.save_error){
+              lessonsLearnedStatus.textContent=`${message} Nie udalo sie jednak zapisac informacji w lokalnej bazie: ${data.save_error}`;
+              setStatus(`LL Candidate utworzono, ale zapis lokalnej bazy nie powiodl sie: ${data.save_error}`,"warning");
+            }else{
+              closeLessonsLearnedModal();
+              setStatus(message,"success");
+            }
+          }else if(data.status==="partial"){
+            const firstError=data.failed?.[0]?.error||"";
+            const saveError=data.save_error?` Nie udalo sie tez zapisac lokalnej bazy: ${data.save_error}`:"";
+            const message=`Zapisano raport PDF i utworzono ${data.created_count||0} LL Candidate, ale ${data.failed_count||0} nie udalo sie utworzyc.${firstError?` ${firstError}`:""}${saveError}${excludedSuffix}`;
+            lessonsLearnedStatus.textContent=message;
+            setStatus(message,"warning");
+          }else{
+            const firstError=data.failed?.[0]?.error||"";
+            const saveError=data.save_error?` Nie udalo sie tez zapisac lokalnej bazy: ${data.save_error}`:"";
+            const message=`Zapisano raport PDF, ale nie utworzono LL Candidate.${firstError?` ${firstError}`:""}${saveError}${excludedSuffix}`;
+            lessonsLearnedStatus.textContent=message;
+            setStatus(message,"warning");
+          }
+        }else{
+          lessonsLearnedStatus.innerHTML='<span class="spinner"></span><span>Zapisywanie wykluczonych przypadkow Lessons Learned...</span>';
+          excludedSaveData=await persistLessonsLearnedExclusions(excludedCases);
+          renderLessonsLearnedDashboard();
+          renderLessonsLearnedRows();
+          const message=`Zapisano ${excludedSaveData.saved_count||0} wykluczonych przypadkow Lessons Learned.`;
+          closeLessonsLearnedModal();
+          setStatus(message,"success");
+        }
+      }catch(err){
+        lessonsLearnedStatus.textContent=`Blad zapisu Lessons Learned: ${err}`;
+      }finally{
+        btnSaveLessonsLearnedPdf.textContent=originalLabel;
+        updateAnalysisExportButton();
+      }
+    }
+
+    function buildAnalysisViewData(items){
+      const ownerDepartmentCounter={},creatorDepartmentCounter={},projectCounter={},repeatedProjectCounter={},repeatedGroups={};
+      for(const item of items||[]){
+        const ownerDepartment=(item?.owner_department||"").trim().toUpperCase();
+        const creatorDepartment=(item?.creator_department||"").trim().toUpperCase();
+        const project=(item?.project||"").trim();
+        const itemType=classifyAnalysisType(item?.type);
+        const summary=(item?.work_item||"").trim();
+        const normalizedSummary=normalizeSummaryForAnalysis(summary)||`wi-${item?.work_item_id||""}`;
+        if(ownerDepartment) ownerDepartmentCounter[ownerDepartment]=(ownerDepartmentCounter[ownerDepartment]||0)+1;
+        if(creatorDepartment) creatorDepartmentCounter[creatorDepartment]=(creatorDepartmentCounter[creatorDepartment]||0)+1;
+        if(project) projectCounter[project]=(projectCounter[project]||0)+1;
+        if(!repeatedGroups[normalizedSummary]){
+          repeatedGroups[normalizedSummary]={normalized_summary:normalizedSummary,titles:{},count:0,types:{},projects:{},owner_departments:{},creator_departments:{},items:[]};
+        }
+        const group=repeatedGroups[normalizedSummary];
+        const title=summary||`WI ${item?.work_item_id||""}`;
+        group.titles[title]=(group.titles[title]||0)+1;
+        group.count+=1;
+        group.types[itemType]=(group.types[itemType]||0)+1;
+        if(project) group.projects[project]=(group.projects[project]||0)+1;
+        if(ownerDepartment) group.owner_departments[ownerDepartment]=(group.owner_departments[ownerDepartment]||0)+1;
+        if(creatorDepartment) group.creator_departments[creatorDepartment]=(group.creator_departments[creatorDepartment]||0)+1;
+        if(group.items.length<12){
+          group.items.push({
+            work_item_id:item?.work_item_id||"",
+            project:item?.project||"",
+            type:itemType,
+            summary,
+            work_item_url:item?.work_item_url||"",
+            owner_department:ownerDepartment,
+            creator_department:creatorDepartment,
+          });
+        }
+      }
+
+      const repeatedCases=Object.values(repeatedGroups).filter(group=>group.count>1).map(group=>{
+        sortCounterEntries(group.projects).forEach(([project,count])=>{
+          repeatedProjectCounter[project]=(repeatedProjectCounter[project]||0)+count;
+        });
+        const nonZeroTypes=["Defect","Finding"].filter(label=>(group.types[label]||0)>0);
+        return {
+          title:sortCounterEntries(group.titles)[0]?.[0]||"",
+          normalized_summary:group.normalized_summary,
+          count:group.count,
+          type:nonZeroTypes.length===1?nonZeroTypes[0]:"Mixed",
+          projects:sortCounterEntries(group.projects).slice(0,8).map(([project,count])=>({project,count})),
+          owner_departments:sortCounterEntries(group.owner_departments).slice(0,5).map(([department,count])=>({department,count,manager:getAnalysisManagerByDepartment(department)})),
+          creator_departments:sortCounterEntries(group.creator_departments).slice(0,5).map(([department,count])=>({department,count,manager:getAnalysisManagerByDepartment(department)})),
+          items:[...group.items].sort((a,b)=>{
+            const projectCompare=(a.project||"").localeCompare(b.project||"","pl",{sensitivity:"base",numeric:true});
+            if(projectCompare!==0) return projectCompare;
+            return (a.work_item_id||"").localeCompare(b.work_item_id||"","pl",{sensitivity:"base",numeric:true});
+          }),
+        };
+      }).sort((a,b)=>{
+        if(b.count!==a.count) return b.count-a.count;
+        return (a.title||"").localeCompare(b.title||"","pl",{sensitivity:"base",numeric:true});
+      });
+
+      return {
+        summary:{total_items:items.length},
+        charts:{
+          owner_department_split:sortCounterEntries(ownerDepartmentCounter).map(([department,value])=>({department,value,manager:getAnalysisManagerByDepartment(department)})),
+          creator_department_split:sortCounterEntries(creatorDepartmentCounter).map(([department,value])=>({department,value,manager:getAnalysisManagerByDepartment(department)})),
+          project_split:sortCounterEntries(projectCounter).map(([project,value])=>({label:project,value:(repeatedProjectCounter[project]||0)||value})),
+        },
+        repeated_cases:repeatedCases,
+      };
+    }
+
+    function positionMenu(anchor){
+      if(!anchor||!filterMenu.classList.contains("open")) return;
+      const rect=anchor.getBoundingClientRect(),menuRect=filterMenu.getBoundingClientRect(),margin=16,width=menuRect.width||320;
+      filterMenu.style.left=`${Math.max(margin,Math.min(rect.left,window.innerWidth-width-margin))}px`;
+      filterMenu.style.top=`${Math.max(margin,rect.bottom+6)}px`;
+    }
+
+    function syncFilter(key,set){
+      const all=distinct(key);
+      if(set.size===all.length) delete columnFilters[key];
+      else columnFilters[key]=set;
+      renderHead();
+      applyView();
+    }
+
+    function renderOptions(key){
+      const box=document.getElementById("options"),search=document.getElementById("optionSearch");
+      if(!box||!search) return;
+      const q=(search.value||"").trim().toLowerCase(),all=distinct(key),selected=columnFilters[key]?new Set(columnFilters[key]):new Set(all),visible=all.filter(v=>(v||"(Puste)").toLowerCase().includes(q));
+      box.innerHTML="";
+      if(!visible.length){box.innerHTML='<div class="empty">Brak pasujących wartości.</div>';return;}
+      for(const v of visible){
+        const label=document.createElement("label");
+        label.className="opt";
+        const input=document.createElement("input");
+        input.type="checkbox";
+        input.checked=selected.has(v);
+        input.addEventListener("change",()=>{input.checked?selected.add(v):selected.delete(v);syncFilter(key,selected);renderOptions(key)});
+        const span=document.createElement("span");
+        span.textContent=v||"(Puste)";
+        label.append(input,span);
+        box.appendChild(label);
+      }
+    }
+
+    function openMenu(key,anchor){
+      activeFilterKey=key;
+      activeAnchor=anchor;
+      const label=(cols().find(c=>c.key===key)||{label:key}).label;
+      filterMenu.innerHTML=`<h3>${esc(label)}</h3><p>Sortowanie i filtrowanie kolumny</p><div class="menu-grid"><button class="btn btn-secondary" type="button" data-a="asc">Sort ASC</button><button class="btn btn-secondary" type="button" data-a="desc">Sort DESC</button><button class="btn btn-secondary" type="button" data-a="clear-sort">Clear sort</button><button class="btn btn-secondary" type="button" data-a="clear-filter">Clear filter</button></div><input id="optionSearch" class="menu-input" type="text" placeholder="Szukaj wartości..."><div class="menu-grid" style="margin-top:10px"><button class="btn btn-secondary" type="button" data-a="all">Select all</button><button class="btn btn-secondary" type="button" data-a="none">Clear all</button></div><div id="options" class="options"></div><button class="btn btn-primary" type="button" data-a="close">Zamknij</button>`;
+      filterMenu.classList.add("open");
+      filterMenu.setAttribute("aria-hidden","false");
+      filterMenu.querySelectorAll("[data-a]").forEach(btn=>btn.addEventListener("click",e=>{
+        const a=e.currentTarget.dataset.a;
+        if(a==="asc") sortState={key,direction:"asc"};
+        if(a==="desc") sortState={key,direction:"desc"};
+        if(a==="clear-sort"&&sortState.key===key) sortState={key:"",direction:""};
+        if(a==="clear-filter") delete columnFilters[key];
+        if(a==="all") delete columnFilters[key];
+        if(a==="none") columnFilters[key]=new Set();
+        if(a==="close"){closeMenu();return;}
+        renderHead();
+        applyView();
+        renderOptions(key);
+      }));
+      document.getElementById("optionSearch").addEventListener("input",()=>renderOptions(key));
+      renderOptions(key);
+      positionMenu(anchor);
+    }
+
+    function renderHead(){
+      if(currentTab==="analysis"){tableHead.innerHTML="";return;}
+      const tr=document.createElement("tr");
+      for(const col of cols()){
+        const dir=sortState.key===col.key?sortState.direction.toUpperCase():"";
+        const filtered=Object.prototype.hasOwnProperty.call(columnFilters,col.key);
+        const th=document.createElement("th");
+        th.innerHTML=`<button class="head-btn" type="button" data-key="${esc(col.key)}"><span>${esc(col.label)}${filtered?" • Filter":""}</span><span>${esc(dir||"▼")}</span></button>`;
+        tr.appendChild(th);
+      }
+      tableHead.innerHTML="";
+      tableHead.appendChild(tr);
+      tableHead.querySelectorAll(".head-btn").forEach(btn=>btn.addEventListener("click",e=>{
+        const key=e.currentTarget.dataset.key;
+        if(activeFilterKey===key&&filterMenu.classList.contains("open")){closeMenu();return;}
+        openMenu(key,e.currentTarget);
+      }));
+    }
+
+    function renderRows(items){
+      tableBody.innerHTML="";
+      if(currentTab==="analysis") return;
+      if(loading){tableBody.innerHTML=`<tr><td class="empty" colspan="${cols().length}"><span class="empty-inline"><span class="spinner"></span><span>Trwa ładowanie wyników...</span></span></td></tr>`;return;}
+      if(!items.length){tableBody.innerHTML=`<tr><td class="empty" colspan="${cols().length}">Brak rekordów.</td></tr>`;return;}
+      for(const it of items){
+        const txt=esc(val(it,"work_item")),url=val(it,"work_item_url"),wi=url?`<a class="link" href="${esc(url)}" target="_blank" rel="noopener noreferrer">${txt}</a>`:txt;
+        const tr=document.createElement("tr");
+        tr.innerHTML=`<td>${esc(val(it,"project"))}</td><td>${esc(val(it,"type"))}</td><td>${esc(val(it,"owner"))}</td><td>${esc(val(it,"department"))}</td><td>${esc(val(it,"work_item_id"))}</td><td>${wi}</td>`;
+        tableBody.appendChild(tr);
+      }
+    }
+
+    function applyView(){
+      if(currentTab==="analysis") return;
+      const q=(globalSearchEl.value||"").trim().toLowerCase();
+      let items=allItems.filter(it=>(!q||blob(it).includes(q))&&Object.entries(columnFilters).every(([k,set])=>set.has(val(it,k))));
+      if(sortState.key){
+        items=[...items].sort((a,b)=>{
+          const av=val(a,sortState.key),bv=val(b,sortState.key),an=Number(av),bn=Number(bv);
+          let r=(!Number.isNaN(an)&&!Number.isNaN(bn)&&av!==""&&bv!=="")?an-bn:av.localeCompare(bv,"pl",{numeric:true,sensitivity:"base"});
+          return sortState.direction==="desc"?-r:r;
+        });
+      }
+      renderRows(items);
+      countBox.textContent=allItems.length?`${items.length} / ${allItems.length} rekordów`:"0 rekordów";
+    }
+
+    function pie(containerId,rows,labelKey="label",valueKey="value"){const host=document.getElementById(containerId);rows=(rows||[]).filter(r=>(r?.[valueKey]??0)>0);if(!rows.length){host.innerHTML='<div class="empty">Brak danych do wykresu.</div>';return}const total=rows.reduce((s,r)=>s+Number(r[valueKey]||0),0);let cur=0;const grad=rows.map((r,i)=>{const start=cur/total*360;cur+=Number(r[valueKey]||0);return `${colors[i%colors.length]} ${start}deg ${cur/total*360}deg`}).join(", ");const legend=rows.map((r,i)=>`<div class="legend-item" title="${esc(r.manager?`Przelozony: ${r.manager}`:"")}"><div><div class="row"><span class="dot" style="background:${colors[i%colors.length]}"></span><strong>${esc(r[labelKey])}</strong></div><div class="muted" style="font-size:12px">${esc(r.manager||`${Math.round((r[valueKey]/total)*100)}%`)}</div></div><strong>${esc(r[valueKey])}</strong></div>`).join("");host.innerHTML=`<div class="pie-box"><div class="pie-shell"><div class="pie" style="background:conic-gradient(${grad})"></div></div><div class="legend">${legend}</div></div>`}
+    function badgeList(items){if(!items?.length)return '<span class="muted">Brak danych</span>';return `<div class="badges">${items.map(it=>`<span class="badge" title="${esc(it.manager?`Przelozony: ${it.manager}`:"Brak przypisania")}">${esc(it.department)} &middot; ${esc(it.count)}</span>`).join("")}</div>`}
+    function simpleTable(id,headers,rows){const host=document.getElementById(id);if(!rows.length){host.innerHTML='<div class="empty">Brak danych.</div>';return}host.innerHTML=`<table><thead><tr>${headers.map(h=>`<th><button class="head-btn" type="button">${esc(h)}</button></th>`).join("")}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join("")}</tr>`).join("")}</tbody></table>`}
+    function projectBadgeList(items){if(!items?.length)return '<span class="muted">Brak danych</span>';return `<div class="badges">${items.map(it=>`<span class="badge">${esc(it.project)} &middot; ${esc(it.count)}</span>`).join("")}</div>`}
+    function caseItemsList(items){if(!items?.length)return '<span class="muted">Brak rekordow</span>';return `<div class="grid" style="gap:8px">${items.slice(0,6).map(it=>{const label=`${it.work_item_id||"-"} | ${it.project||"-"} | ${it.summary||""}`;const link=it.work_item_url?`<a class="link" href="${esc(it.work_item_url)}" target="_blank" rel="noopener noreferrer">${esc(label)}</a>`:esc(label);return `<div><strong>${esc(it.type||"")}</strong><div style="margin-top:4px">${link}</div><div class="muted" style="font-size:12px;margin-top:4px">Creator: ${esc(it.creator_department||"-")} | Owner: ${esc(it.owner_department||"-")}</div></div>`}).join("")}</div>`}
+
+    function renderAnalysisV2(){
+      const a=analysisData||{},viewData=getCurrentAnalysisViewData(),chartsData=getGlobalAnalysisCharts(),s=viewData.summary||{},repeatedCases=viewData.repeated_cases||[];
+      analysisDepartmentFilterValue.textContent=selectedAnalysisDepartment||"Wszystkie działy";
+      pruneLessonsLearnedSelection();
+      renderLessonsLearnedDashboard();
+      void syncLessonsLearnedSavedCasesForDashboard();
+      pie("ownerChart",(chartsData.owner_department_split||[]).slice(0,6).map(x=>({label:x.department,value:x.value,manager:x.manager})),"label","value");
+      pie("creatorChart",(chartsData.creator_department_split||[]).slice(0,6).map(x=>({label:x.department,value:x.value,manager:x.manager})),"label","value");
+      pie("projectChart",(chartsData.project_split||[]).slice(0,6).map(x=>({label:x.label,value:x.value})),"label","value");
+      simpleTable("repeatTable",["Przypadek","Typ","Liczba","Projekty","Creator","Owner","Dokladne WI"],repeatedCases.map(x=>[`<strong>${esc(x.title||"")}</strong><div class="muted" style="font-size:12px">${esc(x.normalized_summary||"")}</div>`,esc(x.type||""),esc(x.count??0),projectBadgeList(x.projects||[]),badgeList(x.creator_departments||[]),badgeList(x.owner_departments||[]),caseItemsList(x.items||[])]));
+      countBox.textContent=selectedAnalysisDepartment?`${s.total_items??0} / ${analysisItems.length} rekordow w analizie`:`${s.total_items??0} rekordow w analizie`;
+      setStatus(a.ai_status==="fallback"?`Analiza dziala w trybie fallback. ${a.ai_error||"Brak odpowiedzi OpenAI."}`:"Analiza AI zostala przygotowana na podstawie polaczonych danych Owner i Creator.",a.ai_status==="fallback"?"warning":"success");
+      if(lessonsLearnedModal.classList.contains("open")) renderLessonsLearnedRows();
+      updateAnalysisExportButton();
+    }
+
+    function renderPeopleList(rows){
+      peopleListBody.innerHTML="";
+      if(!rows.length){
+        peopleListBody.innerHTML='<tr><td class="empty" colspan="2">Brak pracowników w bazie.</td></tr>';
+        return;
+      }
+      for(const row of rows){
+        const tr=document.createElement("tr");
+        tr.innerHTML=`<td>${esc(row.name||"")}</td><td>${esc(row.department||"")}</td>`;
+        peopleListBody.appendChild(tr);
+      }
+    }
+
+    async function loadPeopleList(){
+      openPeopleListModal();
+      peopleListStatus.innerHTML='<span class="spinner"></span><span>Ładowanie listy pracowników...</span>';
+      peopleListBody.innerHTML='<tr><td class="empty" colspan="2">Ładowanie...</td></tr>';
+      try{
+        const res=await fetch("/api/people");
+        const data=await res.json();
+        if(!data.ok) throw new Error(data.error||"Nie udało się pobrać listy pracowników.");
+        const people=Array.isArray(data.people)?data.people:[];
+        renderPeopleList(people);
+        peopleListStatus.textContent=`Załadowano ${people.length} pracowników.`;
+      }catch(err){
+        renderPeopleList([]);
+        peopleListStatus.textContent=`Błąd: ${err}`;
+      }
+    }
+
+    function filteredPeopleListRows(){
+      const query=(peopleListFilter.value||"").trim().toLowerCase();
+      if(!query) return peopleListRows;
+      return peopleListRows.filter(row=>`${row?.name||""} ${row?.department||""} ${row?.jazz_login||""}`.toLowerCase().includes(query));
+    }
+
+    function renderPeopleListRows(rows,emptyText){
+      peopleListBody.innerHTML="";
+      if(!rows.length){
+        peopleListBody.innerHTML=`<tr><td class="empty" colspan="4">${esc(emptyText)}</td></tr>`;
+        return;
+      }
+      for(const row of rows){
+        const isSelected=!!peopleEditSelection[row.normalized_name];
+        const draft=ensurePeopleDraft(row);
+        const nameCell=peopleEditMode&&isSelected
+          ? `<input class="edit-input" type="text" data-edit-field="name" data-person="${esc(row.normalized_name||"")}" value="${esc(draft.name||"")}">`
+          : esc(row.name||"");
+        const departmentCell=peopleEditMode&&isSelected
+          ? `<input class="edit-input" type="text" data-edit-field="department" data-person="${esc(row.normalized_name||"")}" value="${esc(draft.department||"")}">`
+          : esc(row.department||"");
+        const jazzLoginCell=peopleEditMode&&isSelected
+          ? `<input class="edit-input" type="text" data-edit-field="jazz_login" data-person="${esc(row.normalized_name||"")}" value="${esc(draft.jazz_login||"")}">`
+          : esc(row.jazz_login||"");
+        const selector=peopleEditMode
+          ? `<label class="cell-edit"><input type="checkbox" data-select-person="${esc(row.normalized_name||"")}" ${isSelected?"checked":""}><span></span></label>`
+          : "";
+        const tr=document.createElement("tr");
+        tr.innerHTML=`<td><div class="cell-edit">${selector}${nameCell}</div></td><td>${departmentCell}</td><td>${jazzLoginCell}</td><td><button class="icon-btn" type="button" data-delete-person="${esc(row.normalized_name||"")}" aria-label="Usuń pracownika" ${peopleEditMode?"disabled":""}>&#128465;</button></td>`;
+        peopleListBody.appendChild(tr);
+      }
+      peopleListBody.querySelectorAll("[data-delete-person]").forEach(btn=>btn.addEventListener("click",()=>confirmDeletePerson(btn.dataset.deletePerson)));
+      peopleListBody.querySelectorAll("[data-select-person]").forEach(input=>input.addEventListener("change",()=>{
+        const normalizedName=input.dataset.selectPerson;
+        if(input.checked) peopleEditSelection[normalizedName]=true;
+        else delete peopleEditSelection[normalizedName];
+        renderPeopleListRows(filteredPeopleListRows(),peopleListRows.length?"Brak pasujących pracowników.":"Brak pracowników w bazie.");
+      }));
+      peopleListBody.querySelectorAll("[data-edit-field]").forEach(input=>{
+        input.addEventListener("input",()=>{
+          const normalizedName=input.dataset.person;
+          const field=input.dataset.editField;
+          const row=peopleListRows.find(item=>item.normalized_name===normalizedName);
+          if(!row) return;
+          const draft=ensurePeopleDraft(row);
+          draft[field]=field==="department"?input.value.toUpperCase():(field==="jazz_login"?normalizeJazzLoginValue(input.value):input.value);
+        });
+        input.addEventListener("keydown",e=>{
+          if(e.key==="Enter"){
+            e.preventDefault();
+            e.currentTarget.blur();
+          }
+        });
+      });
+    }
+
+    function renderPeopleList(rows){
+      peopleListRows=Array.isArray(rows)?rows:[];
+      pendingDeletePerson=null;
+      peopleDeleteConfirm.classList.add("hidden");
+      const visibleRows=filteredPeopleListRows();
+      renderPeopleListRows(visibleRows,peopleListRows.length?"Brak pasuj\u0105cych pracownik\u00f3w.":"Brak pracownik\u00f3w w bazie.");
+    }
+
+    function togglePeopleEditMode(){
+      peopleDeleteConfirm.classList.add("hidden");
+      pendingDeletePerson=null;
+      if(peopleEditMode){
+        resetPeopleEditState();
+      }else{
+        peopleEditMode=true;
+        btnSavePeopleChanges.classList.remove("hidden");
+        btnToggleEditPeople.textContent="Anuluj edycję";
+      }
+      renderPeopleList(peopleListRows);
+    }
+
+    function preparePeopleSaveConfirm(){
+      if(!peopleEditMode) return;
+      peopleDeleteConfirm.classList.add("hidden");
+      pendingDeletePerson=null;
+      const selectedRows=peopleListRows.filter(row=>peopleEditSelection[row.normalized_name]);
+      if(!selectedRows.length){
+        peopleListStatus.textContent="Zaznacz co najmniej jednego pracownika do edycji.";
+        return;
+      }
+      peopleSaveConfirm.classList.remove("hidden");
+    }
+
+    async function savePeopleChanges(){
+      const selectedRows=peopleListRows.filter(row=>peopleEditSelection[row.normalized_name]);
+      if(!selectedRows.length) return;
+      if(!ensurePeopleManagementAccess()) return;
+      peopleListStatus.innerHTML='<span class="spinner"></span><span>Zapisywanie zmian...</span>';
+      try{
+        for(const row of selectedRows){
+          const draft=ensurePeopleDraft(row);
+          const cleanName=(draft.name||"").trim().split(/\s+/).filter(Boolean).join(" ");
+          const cleanDepartment=(draft.department||"").trim().toUpperCase();
+          const cleanJazzLogin=normalizeJazzLoginValue(draft.jazz_login||"")||buildSuggestedJazzLogin(cleanName.split(/\s+/)[0]||"",cleanName.split(/\s+/).slice(1).join(" "));
+          if(!cleanName||!cleanDepartment||!cleanJazzLogin){
+            throw new Error("Każdy edytowany wiersz musi mieć nazwę, dział i login Jazz.");
+          }
+          const res=await fetch("/api/people/update",{
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({
+              original_normalized_name:row.normalized_name,
+              name:cleanName,
+              department:cleanDepartment,
+              jazz_login:cleanJazzLogin,
+            }),
+          });
+          const data=await res.json();
+          if(!data.ok) throw new Error(data.error||"Nie udało się zapisać zmian.");
+        }
+        peopleSaveConfirm.classList.add("hidden");
+        peopleListStatus.textContent="Zmiany zostały zapisane w bazie danych.";
+        resetPeopleEditState();
+        invalidateLessonsLearnedPeopleDirectory();
+        await loadPeopleList();
+      }catch(err){
+        peopleListStatus.textContent=`Błąd: ${err}`;
+      }
+    }
+
+    function confirmDeletePerson(normalizedName){
+      pendingDeletePerson=peopleListRows.find(row=>(row.normalized_name||"")===normalizedName)||null;
+      peopleDeleteConfirm.classList.toggle("hidden",!pendingDeletePerson);
+    }
+
+    async function deleteSelectedPerson(){
+      if(!pendingDeletePerson) return;
+      if(!ensurePeopleManagementAccess()) return;
+      peopleListStatus.innerHTML='<span class="spinner"></span><span>Usuwanie pracownika...</span>';
+      try{
+        const res=await fetch("/api/people/delete",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({normalized_name:pendingDeletePerson.normalized_name})});
+        const data=await res.json();
+        if(!data.ok) throw new Error(data.error||"Nie udało się usunąć pracownika.");
+        peopleDeleteConfirm.classList.add("hidden");
+        pendingDeletePerson=null;
+        peopleListStatus.textContent=data.message||"Pracownik został usunięty z bazy danych.";
+        invalidateLessonsLearnedPeopleDirectory();
+        await loadPeopleList();
+      }catch(err){
+        peopleListStatus.textContent=`Błąd: ${err}`;
+      }
+    }
+
+    async function loadPeopleList(){
+      if(!ensurePeopleManagementAccess()) return;
+      openPeopleListModal();
+      resetPeopleEditState();
+      peopleListFilter.value="";
+      peopleListStatus.innerHTML='<span class="spinner"></span><span>\u0141adowanie listy pracownik\u00f3w...</span>';
+      peopleListBody.innerHTML='<tr><td class="empty" colspan="4">\u0141adowanie...</td></tr>';
+      try{
+        const res=await fetch("/api/people");
+        const data=await res.json();
+        if(!data.ok) throw new Error(data.error||"Nie uda\u0142o si\u0119 pobra\u0107 listy pracownik\u00f3w.");
+        const people=Array.isArray(data.people)?data.people:[];
+        renderPeopleList(people);
+        peopleListStatus.textContent=`Za\u0142adowano ${people.length} pracownik\u00f3w.`;
+      }catch(err){
+        peopleListRows=[];
+        renderPeopleListRows([],`B\u0142\u0105d: ${err}`);
+        peopleListStatus.textContent=`B\u0142\u0105d: ${err}`;
+      }
+    }
+
+    async function submitPersonToDatabase(){
+      if(!pendingPersonPayload) return;
+      if(!ensurePeopleManagementAccess()) return;
+      peopleError.textContent="";
+      setPeopleBusy(true,"Zapisywanie do bazy danych...");
+      try{
+        const res=await fetch("/api/people",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({...pendingPersonPayload})});
+        const data=await res.json();
+        if(!data.ok) throw new Error(data.error||"Nie udało się zapisać danych.");
+        pendingPersonPayload=null;
+        togglePeopleConfirm(false);
+        personName.value="";
+        personDepartment.value="";
+        peopleStatus.textContent=data.message||"Pracownik został zapisany w bazie danych.";
+        setStatus((data.message||"Pracownik został zapisany w bazie danych.")+" Zmiany będą widoczne przy kolejnym odświeżeniu danych.","success");
+      }catch(err){
+        peopleError.textContent=`Błąd zapisu: ${err}`;
+      }finally{
+        setPeopleBusy(false);
+      }
+    }
+
+    const syncActiveTab=()=>{
+      tabOwner.classList.toggle("active",currentTab==="owner");
+      tabCreator.classList.toggle("active",currentTab==="creator");
+      tabAnalysis.classList.toggle("active",currentTab==="analysis");
+    };
+
+    async function loadCurrent(afterLogin=false){
+      if(!sessionState.authenticated){setStatus("Zaloguj sie do Jazz, aby pobrac dane.");openModal();return false}
+      if(currentTab==="analysis"&&!canAccessAnalysis()){
+        currentTab="owner";
+        syncActiveTab();
+      }
+      updateLayout();
+      let shouldRenderTable=false;
+      loading=true;
+      closeMenu();
+      closeLessonsLearnedModal();
+      btnRefresh.disabled=btnLogin.disabled=btnSubmitLogin.disabled=tabOwner.disabled=tabCreator.disabled=tabAnalysis.disabled=btnAnalyzeLessonsLearned.disabled=btnExportAnalysisPdf.disabled=true;
+      setTabLoading(tabOwner,currentTab==="owner","Owner");
+      setTabLoading(tabCreator,currentTab==="creator","Creator");
+      setTabLoading(tabAnalysis,currentTab==="analysis","Analiza");
+      if(currentTab!=="analysis") renderRows([]);
+      countBox.textContent=currentTab==="analysis"?"Trwa analiza...":"Trwa ładowanie...";
+      if(currentTab==="analysis") startAnalysisProgress();
+      else setStatus(`Pobieranie danych dla widoku ${currentTab==="owner"?"Owner":"Creator"}...`);
+      try{
+        const res=await fetch(currentTab==="owner"?"/api/workitems_owner":currentTab==="creator"?"/api/workitems_creator":"/api/analysis",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({})});
+        const data=await res.json();
+        if(res.status===401){
+          const msg=data.error||"Sesja wygasla. Zaloguj sie ponownie do Jazz.";
+          if(afterLogin) modalError.textContent=msg;
+          await handleUnauthorized(msg);
+          return false;
+        }
+        if(!data.ok){const msg=data.error||"Nie udało się pobrać danych.";setStatus(msg,"error");if(afterLogin)modalError.textContent=msg;return false}
+      if(currentTab==="analysis"){analysisData=data.analysis||null;analysisItems=Array.isArray(data.items)?data.items:[];selectedAnalysisDepartment="";lessonsLearnedSelection={};resetLessonsLearnedSavedCases();renderAnalysisDepartmentFilterOptions();renderAnalysisV2()}
+        else{analysisData=null;analysisItems=[];selectedAnalysisDepartment="";lessonsLearnedSelection={};resetLessonsLearnedSavedCases();allItems=Array.isArray(data.items)?data.items:[];sortState={key:"",direction:""};columnFilters={};renderHead();shouldRenderTable=true;setStatus(`Załadowano ${allItems.length} rekordów dla widoku ${currentTab==="owner"?"Owner":"Creator"}.`,"success")}
+        if(afterLogin){modalError.textContent="";closeModal()}
+        return true;
+      }catch(err){
+        const msg=`Błąd połączenia z backendem: ${err}`;
+        setStatus(msg,"error");
+        if(afterLogin) modalError.textContent=msg;
+        return false;
+      }finally{
+        loading=false;
+        if(shouldRenderTable) applyView();
+        btnRefresh.disabled=btnLogin.disabled=btnSubmitLogin.disabled=tabOwner.disabled=tabCreator.disabled=tabAnalysis.disabled=false;
+        setTabLoading(tabOwner,false,"Owner");
+        setTabLoading(tabCreator,false,"Creator");
+        setTabLoading(tabAnalysis,false,"Analiza");
+        updateAccessControls();
+        updateAnalysisExportButton();
+      }
+    }
+
+    function switchTab(tab){
+      if(tab==="analysis"&&!ensureAnalysisAccess()) return;
+      currentTab=tab;
+      syncActiveTab();
+      allItems=[];analysisData=null;analysisItems=[];selectedAnalysisDepartment="";sortState={key:"",direction:""};columnFilters={};lessonsLearnedSelection={};resetLessonsLearnedSavedCases();
+      analysisDepartmentFilterValue.textContent="Wszystkie działy";
+      closeMenu();
+      closeAnalysisDepartmentFilter();
+      closeLessonsLearnedModal();
+      renderHead();
+      renderRows([]);
+      updateLayout();
+      if(sessionState.authenticated){loadCurrent();return}
+      setStatus("Zaloguj sie do Jazz, aby pobrac dane.");
+      countBox.textContent=tab==="analysis"?"0 rekordow w analizie":"0 rekordow";
+      return;
+    }
+
+    btnLogin.addEventListener("click",openModal);
+    btnRefresh.addEventListener("click",()=>loadCurrent());
+    btnManagePeople.addEventListener("click",openPeopleModal);
+    tabOwner.addEventListener("click",()=>switchTab("owner"));
+    tabCreator.addEventListener("click",()=>switchTab("creator"));
+    tabAnalysis.addEventListener("click",()=>switchTab("analysis"));
+    analysisDepartmentFilterButton.addEventListener("click",toggleAnalysisDepartmentFilter);
+    btnCloseAnalysisDepartment.addEventListener("click",closeAnalysisDepartmentFilter);
+    btnClearAnalysisDepartment.addEventListener("click",clearAnalysisDepartmentFilter);
+    btnAnalyzeLessonsLearned.addEventListener("click",openLessonsLearnedModal);
+    btnExportAnalysisPdf.addEventListener("click",exportCurrentAnalysisPdf);
+    btnCloseLessonsLearnedModal.addEventListener("click",closeLessonsLearnedModal);
+    btnCloseLessonsLearnedModalTop.addEventListener("click",closeLessonsLearnedModal);
+    btnSaveLessonsLearnedPdf.addEventListener("click",saveLessonsLearned);
+    globalSearchEl.addEventListener("input",applyView);
+    document.getElementById("btnCloseModal").addEventListener("click",closeModal);
+    document.getElementById("btnCancelModal").addEventListener("click",closeModal);
+    document.getElementById("btnClosePeopleModal").addEventListener("click",closePeopleModal);
+    document.getElementById("btnCancelPeopleModal").addEventListener("click",closePeopleModal);
+    document.getElementById("btnClosePeopleListModal").addEventListener("click",closePeopleListModal);
+    document.getElementById("btnClosePeopleListFooter").addEventListener("click",closePeopleListModal);
+    loginForm.addEventListener("submit",async e=>{e.preventDefault();const next={username:(modalUsername.value||"").trim(),password:modalPassword.value||""};if(!next.username||!next.password){modalError.textContent="Podaj login i hasło.";loginStatus.innerHTML="";return}modalError.textContent="";loginStatus.innerHTML='<span class="spinner"></span><span>Logowanie...</span>';modalUsername.disabled=true;modalPassword.disabled=true;try{const res=await fetch("/api/session/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(next)});const data=await res.json();if(!res.ok||!data.ok) throw new Error(data?.error||"Nie udało się zalogować do Jazz.");applySessionUser(data.user||null);sessionUI();await loadCurrent(true)}catch(err){modalError.textContent=`${err}`;await refreshSessionState()}finally{modalUsername.disabled=false;modalPassword.disabled=false;loginStatus.innerHTML="";sessionUI()}});
+    peopleForm.addEventListener("submit",e=>{e.preventDefault();const name=(personName.value||"").trim().replace(/\s+/g," ");const department=(personDepartment.value||"").trim().toUpperCase();if(!name||!department){peopleError.textContent="Wpisz nazwę i dział.";peopleStatus.innerHTML="";pendingPersonPayload=null;togglePeopleConfirm(false);return}peopleError.textContent="";peopleStatus.innerHTML="";pendingPersonPayload={name,department};togglePeopleConfirm(true)});
+    btnConfirmPeopleYes.addEventListener("click",submitPersonToDatabase);
+    btnConfirmPeopleNo.addEventListener("click",()=>{pendingPersonPayload=null;togglePeopleConfirm(false);peopleStatus.innerHTML=""});
+    btnShowPeopleList.addEventListener("click",loadPeopleList);
+    btnConfirmDeleteYes.addEventListener("click",deleteSelectedPerson);
+    btnConfirmDeleteNo.addEventListener("click",()=>{pendingDeletePerson=null;peopleDeleteConfirm.classList.add("hidden")});
+    btnToggleEditPeople.addEventListener("click",togglePeopleEditMode);
+    btnSavePeopleChanges.addEventListener("click",preparePeopleSaveConfirm);
+    btnConfirmSavePeopleYes.addEventListener("click",savePeopleChanges);
+    btnConfirmSavePeopleNo.addEventListener("click",()=>peopleSaveConfirm.classList.add("hidden"));
+    peopleListFilter.addEventListener("input",()=>renderPeopleListRows(filteredPeopleListRows(),peopleListRows.length?"Brak pasuj\u0105cych pracownik\u00f3w.":"Brak pracownik\u00f3w w bazie."));
+    loginModal.addEventListener("click",e=>{if(e.target===loginModal)closeModal()});
+    peopleModal.addEventListener("click",e=>{if(e.target===peopleModal)closePeopleModal()});
+    peopleListModal.addEventListener("click",e=>{if(e.target===peopleListModal)closePeopleListModal()});
+    lessonsLearnedModal.addEventListener("click",e=>{if(e.target===lessonsLearnedModal)closeLessonsLearnedModal()});
+    document.addEventListener("click",e=>{
+      if(filterMenu.classList.contains("open")&&!filterMenu.contains(e.target)&&!e.target.closest(".head-btn")) closeMenu();
+      if(!analysisDepartmentFilterMenu.classList.contains("hidden")&&!analysisDepartmentFilterWrap.contains(e.target)) closeAnalysisDepartmentFilter();
+    });
+    document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeMenu();closeAnalysisDepartmentFilter();closeModal();closePeopleModal();closePeopleListModal();closeLessonsLearnedModal()}});
+    window.addEventListener("resize",()=>positionMenu(activeAnchor));
+    window.addEventListener("scroll",()=>positionMenu(activeAnchor),true);
+
+    async function submitPersonToDatabase(){
+      if(!pendingPersonPayload) return;
+      if(!ensurePeopleManagementAccess()) return;
+      peopleError.textContent="";
+      setPeopleBusy(true,"Zapisywanie do bazy danych...");
+      try{
+        const res=await fetch("/api/people",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({...pendingPersonPayload})});
+        const data=await res.json();
+        if(!data.ok) throw new Error(data.error||"Nie uda\u0142o si\u0119 zapisa\u0107 danych.");
+        pendingPersonPayload=null;
+        togglePeopleConfirm(false);
+        personName.value="";
+        if(personFirstName) personFirstName.value="";
+        if(personJazzLogin) personJazzLogin.value="";
+        personDepartment.value="";
+        const successMessage=data.message||"Pracownik zosta\u0142 dodany w bazie danych.";
+        peopleStatus.textContent=successMessage;
+        setStatus(`${successMessage} Zmiany b\u0119d\u0105 widoczne przy kolejnym od\u015bwie\u017ceniu danych.`,"success");
+        invalidateLessonsLearnedPeopleDirectory();
+      }catch(err){
+        peopleError.textContent=`B\u0142\u0105d zapisu: ${err}`;
+      }finally{
+        setPeopleBusy(false);
+      }
+    }
+
+    setupPeopleForm();
+    peopleForm.addEventListener("submit",e=>{
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      const lastName=(personName.value||"").trim().replace(/\s+/g," ");
+      const firstName=((personFirstName?.value)||"").trim().replace(/\s+/g," ");
+      const jazzLogin=normalizeJazzLoginValue((personJazzLogin?.value)||"")||buildSuggestedJazzLogin(lastName,firstName);
+      const department=(personDepartment.value||"").trim().toUpperCase();
+      const fullName=[lastName,firstName].filter(Boolean).join(" ");
+      if(!lastName||!firstName||!department||!jazzLogin){
+        peopleError.textContent="Wpisz nazwisko, imię, dział i login Jazz.";
+        peopleStatus.innerHTML="";
+        pendingPersonPayload=null;
+        togglePeopleConfirm(false);
+        return;
+      }
+      peopleError.textContent="";
+      peopleStatus.innerHTML="";
+      if(personJazzLogin) personJazzLogin.value=jazzLogin;
+      pendingPersonPayload={name:fullName,department,jazz_login:jazzLogin};
+      togglePeopleConfirm(true);
+    },true);
+
+    updateLayout();
+    renderHead();
+    renderRows([]);
+    refreshSessionState().then(authenticated=>{if(authenticated) loadCurrent();});
+  </script>
+</body>
+</html>

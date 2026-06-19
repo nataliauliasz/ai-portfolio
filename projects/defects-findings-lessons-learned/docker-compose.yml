@@ -1,0 +1,32 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: defects-findings-ll-report
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+      DB_PATH: ${DB_PATH:-/data/people.sqlite3}
+      LESSONS_LEARNED_DB_PATH: ${LESSONS_LEARNED_DB_PATH:-/data/lessons_learned.sqlite3}
+      AUTH_SESSION_DB_PATH: ${AUTH_SESSION_DB_PATH:-/data/auth_sessions.sqlite3}
+      JAZZ_BASE_URL: ${JAZZ_BASE_URL:-https://jazz.example.internal/}
+      CCM_APP_URL: ${CCM_APP_URL:-https://jazz.example.internal/ccm/}
+      OSLC_CATALOG_URL: ${OSLC_CATALOG_URL:-https://jazz.example.internal/ccm/oslc/workitems/catalog}
+      JTS_APP_URL: ${JTS_APP_URL:-https://jazz.example.internal/jts/}
+      RS_BASE_URL: ${RS_BASE_URL:-https://jazz.example.internal}
+      VERIFY_SSL: ${VERIFY_SSL:-true}
+      OPENAI_API_KEY_FILE: ${OPENAI_API_KEY_FILE:-/run/secrets/openai_api_key.txt}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-5-mini}
+      OPENAI_MAX_OUTPUT_TOKENS: ${OPENAI_MAX_OUTPUT_TOKENS:-35000}
+      FLASK_SECRET_KEY: ${FLASK_SECRET_KEY:-}
+      FLASK_SECRET_KEY_FILE: ${FLASK_SECRET_KEY_FILE:-/run/secrets/flask_secret_key.txt}
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-true}
+      SESSION_COOKIE_SAMESITE: ${SESSION_COOKIE_SAMESITE:-Lax}
+      TRUSTED_HOSTS: ${TRUSTED_HOSTS:-}
+      AUTH_SESSION_TTL_SECONDS: ${AUTH_SESSION_TTL_SECONDS:-28800}
+    ports:
+      - "${APP_PORT:-5000}:5000"
+    volumes:
+      - ${DATA_DIR_HOST:-./data}:/data
+      - ${SECRETS_DIR_HOST:-./secrets}:/run/secrets:ro
+    restart: unless-stopped

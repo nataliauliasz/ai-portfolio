@@ -1,0 +1,609 @@
+:root {
+    color-scheme: dark;
+    --color-bg: #1f1f1f;
+    --color-text: #f2f2f2;
+    --color-muted: #c9c9c9;
+    --sidebar-bg: #404040;
+    --surface-bg: #303030;
+    --surface-elevated: #404040;
+    --input-bg: #606060;
+    --input-border: #707070;
+    --button-bg: #606060;
+    --button-hover: #808080;
+    --button-text: #ffffff;
+    --primary-bg: #aa336a;
+    --primary-hover: #cc4477;
+    --secondary-bg: #2b7de1;
+    --secondary-hover: #3e8ef5;
+    --overlay-backdrop: rgba(0, 0, 0, 0.7);
+    --dialog-bg: #2b2b2b;
+    --tooltip-bg: rgba(40, 40, 40, 0.95);
+    --tooltip-text: #ffffff;
+    --divider-color: #5a5a5a;
+    --list-hover: rgba(255, 255, 255, 0.05);
+    --list-active: rgba(170, 51, 106, 0.4);
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    margin: 0;
+    height: 100%;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background-color: var(--color-bg);
+    color: var(--color-text);
+}
+
+body {
+    display: flex;
+}
+
+#app {
+    flex: 1;
+    display: flex;
+    min-height: 100vh;
+}
+
+.sidebar {
+    width: 260px;
+    background-color: var(--sidebar-bg);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.sidebar-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+
+.sidebar-group label {
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.sidebar input[type='number'] {
+    background-color: var(--input-bg);
+    border: 1px solid var(--input-border);
+    color: var(--color-text);
+    border-radius: 5px;
+    padding: 6px 8px;
+    font-size: 14px;
+}
+
+.sidebar input[type='number']:disabled {
+    opacity: 0.6;
+}
+
+.sidebar-spacer {
+    flex: 1;
+}
+
+.button {
+    background-color: var(--button-bg);
+    color: var(--button-text);
+    border: none;
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    text-align: center;
+}
+.button:hover:not(:disabled) {
+    background-color: var(--button-hover);
+}
+
+.button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.button.primary {
+    background-color: var(--primary-bg);
+    color: #fff;
+}
+
+.button.primary:hover:not(:disabled) {
+    background-color: var(--primary-hover);
+}
+
+.button.secondary {
+    background-color: var(--secondary-bg);
+    color: #fff;
+}
+
+.button.secondary:hover:not(:disabled) {
+    background-color: var(--secondary-hover);
+}
+
+.viewer {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 16px;
+}
+
+#canvasContainer {
+    flex: 1;
+    position: relative;
+    background-color: var(--surface-bg);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+#pdfCanvas,
+#overlayCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: block;
+    max-width: none;
+    max-height: none;
+}
+
+#overlayCanvas {
+    pointer-events: none;
+}
+
+.navigation {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    color: var(--color-text);
+    font-weight: 600;
+}
+
+#pageIndicator {
+    min-width: 180px;
+    text-align: center;
+}
+
+#progressOverlay {
+    position: fixed;
+    inset: 0;
+    background-color: var(--overlay-backdrop);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+}
+
+#progressOverlay.hidden {
+    display: none;
+}
+
+.dialog {
+    width: 320px;
+    background-color: var(--dialog-bg);
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.dialog p {
+    margin: 0;
+    font-weight: 600;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 10px;
+    border-radius: 6px;
+    background-color: var(--surface-elevated);
+    overflow: hidden;
+}
+
+#progressFill {
+    height: 100%;
+    width: 0;
+    background: linear-gradient(90deg, var(--secondary-bg), #62a8ff);
+    transition: width 0.25s ease;
+}
+
+.dialog-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.tooltip-target {
+    position: relative;
+    cursor: pointer;
+}
+
+.tooltip-target::after,
+.tooltip-target::before {
+    position: absolute;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+    transform: translate(-50%, -8px);
+    left: 50%;
+    z-index: 400;
+}
+
+.tooltip-target::after {
+    content: attr(data-tooltip);
+    bottom: 100%;
+    background-color: var(--tooltip-bg);
+    color: var(--tooltip-text);
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    white-space: normal;
+    max-width: 260px;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+.tooltip-target::before {
+    content: '';
+    bottom: calc(100% - 6px);
+    border-width: 6px;
+    border-style: solid;
+    border-color: var(--tooltip-bg) transparent transparent transparent;
+}
+
+.tooltip-target:hover::after,
+.tooltip-target:hover::before,
+.tooltip-target:focus::after,
+.tooltip-target:focus::before,
+.tooltip-target:focus-within::after,
+.tooltip-target:focus-within::before {
+    opacity: 1;
+    visibility: visible;
+    transform: translate(-50%, -12px);
+}
+
+.tooltip-target.tooltip-right::after,
+.tooltip-target.tooltip-right::before {
+    left: auto;
+    right: 0;
+    transform: translate(0, -8px);
+}
+
+.tooltip-target.tooltip-right::after {
+    transform-origin: right bottom;
+}
+
+.tooltip-target.tooltip-right:hover::after,
+.tooltip-target.tooltip-right:hover::before,
+.tooltip-target.tooltip-right:focus::after,
+.tooltip-target.tooltip-right:focus::before,
+.tooltip-target.tooltip-right:focus-within::after,
+.tooltip-target.tooltip-right:focus-within::before {
+    transform: translate(0, -12px);
+}
+
+.overlay {
+    position: fixed;
+    inset: 0;
+    background-color: var(--overlay-backdrop);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 210;
+}
+
+.overlay.hidden {
+    display: none !important;
+}
+
+.clients-dialog {
+    width: clamp(780px, 70vw, 980px);
+    min-height: 480px;
+    background-color: var(--surface-elevated);
+    border-radius: 14px;
+    padding: 24px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.clients-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.clients-header h2 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.icon-button {
+    background: transparent;
+    border: none;
+    color: var(--color-text);
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: background-color 0.2s ease;
+}
+
+.icon-button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.clients-body {
+    display: grid;
+    grid-template-columns: minmax(220px, 1fr) minmax(340px, 1.6fr);
+    gap: 20px;
+    flex: 1;
+}
+
+.clients-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.clients-list input[type='text'] {
+    background-color: var(--input-bg);
+    border: 1px solid var(--input-border);
+    color: var(--color-text);
+    border-radius: 6px;
+    padding: 8px 10px;
+}
+
+.clients-list ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+    border: 1px solid var(--divider-color);
+    border-radius: 8px;
+    background-color: var(--surface-bg);
+    flex: 1;
+}
+
+.clients-list li {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--divider-color);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    transition: background-color 0.15s ease;
+}
+
+.clients-list li:last-child {
+    border-bottom: none;
+}
+
+.clients-list li.empty {
+    cursor: default;
+    font-style: italic;
+    text-align: center;
+    opacity: 0.7;
+}
+
+.clients-list li.empty:hover {
+    background-color: inherit;
+}
+
+.clients-list li:hover {
+    background-color: var(--list-hover);
+}
+
+.clients-list li.active {
+    background-color: var(--list-active);
+}
+
+.clients-list .client-aliases {
+    font-size: 12px;
+    opacity: 0.8;
+}
+
+.clients-edit {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.form-field label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+}
+
+.form-field input[type='text'],
+.form-field textarea {
+    background-color: var(--input-bg);
+    border: 1px solid var(--input-border);
+    color: var(--color-text);
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-family: inherit;
+    font-size: 14px;
+}
+
+.form-field textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.form-field.checkbox {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.form-field.checkbox input[type='checkbox'] {
+    width: 20px;
+    height: 20px;
+}
+
+.help-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background-color: var(--primary-bg);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: help;
+    line-height: 1;
+}
+
+.clients-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.clients-actions .button {
+    flex: 1 1 30%;
+}
+
+.test-result {
+    min-height: 20px;
+    font-size: 13px;
+    opacity: 0.85;
+}
+/* === PATCH: overlay & dialog, żeby nie wchodziło pod pasek przeglądarki === */
+.overlay {
+    /* było: center — zostawiamy, ale dodajemy górny "oddech" */
+    padding-top: 32px;            /* zapas od góry */
+    align-items: flex-start;      /* zaczynaj od góry + padding-top */
+}
+
+.clients-dialog {
+    /* ogranicz maks. wysokość i włącz przewijanie wnętrza dialogu */
+    max-height: calc(100vh - 64px);
+    overflow: auto;
+}
+
+/* Firefox czasem inaczej liczy viewport — dajmy minimalny obszar dla canvasa */
+@-moz-document url-prefix() {
+  #canvasContainer { min-height: 50vh; }
+}
+
+/* === PATCH: tooltip "na dół" (gdy element blisko górnej krawędzi) === */
+.tooltip-target.tooltip-bottom::after,
+.tooltip-target.tooltip-bottom::before {
+    left: 50%;
+    transform: translate(-50%, 8px);  /* animacja w dół */
+    opacity: 0;
+    visibility: hidden;
+}
+
+.tooltip-target.tooltip-bottom::after {
+    /* zamiast bottom:100% – pokazujemy POD elementem */
+    top: 100%;
+    bottom: auto;
+    background-color: var(--tooltip-bg);
+}
+
+.tooltip-target.tooltip-bottom::before {
+    top: calc(100% + 0px);
+    bottom: auto;
+    border-color: transparent transparent var(--tooltip-bg) transparent; /* grot do góry */
+}
+
+/* Pokazuj dolny wariant na hover/focus */
+.tooltip-target.tooltip-bottom:hover::after,
+.tooltip-target.tooltip-bottom:hover::before,
+.tooltip-target.tooltip-bottom:focus::after,
+.tooltip-target.tooltip-bottom:focus::before,
+.tooltip-target.tooltip-bottom:focus-within::after,
+.tooltip-target.tooltip-bottom:focus-within::before {
+    opacity: 1;
+    visibility: visible;
+    transform: translate(-50%, 12px);
+}
+/* === PATCH: dialog nie pod paskiem przeglądarki, własny scroll === */
+.overlay {
+  /* oryg.: center; tu ustawiamy start z odstępem od góry */
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 64px;         /* zapas od góry */
+  padding-left: 16px;
+  padding-right: 16px;
+  z-index: 9999;             /* pewny overlay nad wszystkim */
+}
+
+@supports (height: 100dvh) {
+  .overlay { min-height: 100dvh; }
+}
+
+.clients-dialog {
+  max-height: calc(100vh - 96px); /* mieści się pod topem + ma margines na dół */
+  overflow: auto;                  /* scroll wewnątrz dialogu */
+  margin: 0;                       /* brak dodatkowych marginesów */
+}
+
+/* zablokuj scroll tła, gdy overlay otwarty */
+body.no-scroll {
+  overflow: hidden;
+}
+
+/* === PATCH: dolny wariant tooltipa gdy element blisko górnej krawędzi === */
+.tooltip-target.tooltip-bottom::after,
+.tooltip-target.tooltip-bottom::before {
+  left: 50%;
+  transform: translate(-50%, 8px);
+  opacity: 0;
+  visibility: hidden;
+}
+
+.tooltip-target.tooltip-bottom::after {
+  top: 100%;
+  bottom: auto;
+  background-color: var(--tooltip-bg);
+}
+
+.tooltip-target.tooltip-bottom::before {
+  top: calc(100% + 0px);
+  bottom: auto;
+  border-color: transparent transparent var(--tooltip-bg) transparent;
+}
+
+.tooltip-target.tooltip-bottom:hover::after,
+.tooltip-target.tooltip-bottom:hover::before,
+.tooltip-target.tooltip-bottom:focus::after,
+.tooltip-target.tooltip-bottom:focus::before,
+.tooltip-target.tooltip-bottom:focus-within::after,
+.tooltip-target.tooltip-bottom:focus-within::before {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 12px);
+}
+
+/* Firefox bywa „ciasny” z wysokością viewportu – dajmy minimalną wysokość canvasa, żeby układ się nie rozsypywał */
+@-moz-document url-prefix() {
+  #canvasContainer { min-height: 50vh; }
+}

@@ -1,0 +1,27 @@
+[
+  {
+    "name": "Alex Example",
+    "department": "DEPL",
+    "jazz_login": "alex_example"
+  },
+  {
+    "name": "Taylor Sample",
+    "department": "DER1",
+    "jazz_login": "taylor_sample"
+  },
+  {
+    "name": "Jordan Demo",
+    "department": "DER2",
+    "jazz_login": "jordan_demo"
+  },
+  {
+    "name": "Casey Template",
+    "department": "DEM1",
+    "jazz_login": "casey_template"
+  },
+  {
+    "name": "Morgan Placeholder",
+    "department": "DEM2",
+    "jazz_login": "morgan_placeholder"
+  }
+]

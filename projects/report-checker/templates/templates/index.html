@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>Report Checker</title>
+    <style>
+        :root {
+            --bg-gradient-start: #6aa7ff;
+            --bg-gradient-end: #4c7dff;
+            --card-bg: #ffffff;
+            --accent: #2f6bff;
+            --accent-dark: #1f50c9;
+            --text-primary: #0f1e42;
+            --text-secondary: #53637a;
+            --danger: #ff4d4f;
+            --border: #e1e7f5;
+            --radius-lg: 24px;
+            --radius-sm: 12px;
+            --shadow: 0 24px 48px rgba(15, 30, 66, 0.12);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: "Inter", "Segoe UI", Arial, sans-serif;
+            background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 48px 16px;
+        }
+
+        .card {
+            width: min(960px, 100%);
+            background: var(--card-bg);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow);
+            padding: 48px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before,
+        .card::after {
+            content: "";
+            position: absolute;
+            border-radius: 50%;
+            transition: opacity 0.3s ease;
+        }
+
+        .card::before {
+            width: 340px;
+            height: 340px;
+            background: rgba(88, 147, 255, 0.12);
+            top: -160px;
+            right: -140px;
+        }
+
+        .card::after {
+            width: 260px;
+            height: 260px;
+            background: rgba(150, 182, 255, 0.1);
+            bottom: -120px;
+            left: -60px;
+        }
+
+        h1 {
+            margin: 0 0 12px;
+            font-size: 32px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .subtitle {
+            margin: 0 0 28px;
+            color: var(--text-secondary);
+            font-size: 16px;
+        }
+
+        .banner {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            background: rgba(47, 107, 255, 0.08);
+            border: 1px solid rgba(47, 107, 255, 0.18);
+            border-radius: var(--radius-sm);
+            padding: 12px 16px;
+            margin-bottom: 28px;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .banner strong {
+            color: var(--accent);
+            display: block;
+        }
+
+        .upload-area {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            flex: 1 1 320px;
+        }
+
+        .file-input-wrapper input[type="file"] {
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            inset: 0;
+            cursor: pointer;
+        }
+
+        .file-label {
+            display: block;
+            width: 100%;
+            padding: 16px 20px;
+            border-radius: var(--radius-sm);
+            border: 1px dashed rgba(47, 107, 255, 0.4);
+            color: var(--text-secondary);
+            background: rgba(47, 107, 255, 0.05);
+            font-size: 15px;
+            transition: border-color 0.2s ease, background 0.2s ease;
+        }
+
+        .file-label:hover {
+            border-color: var(--accent);
+            background: rgba(47, 107, 255, 0.09);
+        }
+
+        .file-name {
+            margin-top: 8px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            word-break: break-all;
+        }
+
+        .primary-button {
+            align-self: center;
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            border-radius: var(--radius-sm);
+            padding: 16px 28px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s ease, transform 0.1s ease;
+        }
+
+        .primary-button:hover {
+            background: var(--accent-dark);
+        }
+
+        .primary-button:active {
+            transform: scale(0.98);
+        }
+
+        .section-title {
+            font-size: 20px;
+            margin: 0 0 12px;
+        }
+
+        .progress-wrapper {
+            margin-bottom: 28px;
+        }
+
+        .progress-status {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--text-secondary);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            border-radius: 999px;
+            background: rgba(47, 107, 255, 0.12);
+            overflow: hidden;
+        }
+
+        .progress-bar::after {
+            content: "";
+            display: block;
+            width: 65%;
+            height: 100%;
+            background: var(--accent);
+            animation: loading-bar 2.2s ease-in-out infinite;
+        }
+
+        @keyframes loading-bar {
+            0% {
+                transform: translateX(-120%);
+            }
+            50% {
+                transform: translateX(20%);
+            }
+            100% {
+                transform: translateX(120%);
+            }
+        }
+
+        .log-area {
+            background: rgba(47, 107, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 20px;
+            font-size: 14px;
+            color: var(--text-secondary);
+            height: 320px;
+            overflow: auto;
+            line-height: 1.5;
+            white-space: pre-wrap;
+        }
+
+        .log-line-error {
+            color: var(--danger);
+            font-weight: 600;
+        }
+
+        .footer {
+            margin-top: 24px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-align: right;
+        }
+
+        @media (max-width: 720px) {
+            .card {
+                padding: 32px 24px;
+            }
+
+            h1 {
+                font-size: 26px;
+            }
+
+            .upload-area {
+                flex-direction: column;
+            }
+
+            .primary-button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Program do sprawdzania raportów</h1>
+        <p class="subtitle">Program do automatycznego sprawdzania raportów z testów funkcjonalnych — wrzuć PDF i obserwuj wynik analizy.</p>
+
+        <div class="banner">
+            <strong>Uwaga!</strong>
+            Przy dużych raportach analiza może potrwać kilka minut. Prosimy o cierpliwość.
+        </div>
+
+        <form id="upload-form" class="upload-area" enctype="multipart/form-data">
+            <div class="file-input-wrapper">
+                <label class="file-label">
+                    <span id="file-label-text">Naciśnij i wybierz plik PDF ...</span>
+                    <input id="file-input" type="file" name="pdf" accept=".pdf" required>
+                </label>
+                <div class="file-name" id="file-name">Nie wybrano pliku</div>
+            </div>
+            <button type="submit" class="primary-button">Prześlij i rozpocznij</button>
+        </form>
+
+        <section class="progress-wrapper">
+            <h2 class="section-title">Status przetwarzania</h2>
+            <div class="progress-status" id="progress">Oczekiwanie na dokument</div>
+            <div class="progress-bar" aria-hidden="true"></div>
+        </section>
+
+        <section>
+            <h2 class="section-title">Logi</h2>
+            <pre id="log" class="log-area"></pre>
+        </section>
+
+        <div class="footer">Report Checker • wersja operacyjna</div>
+    </div>
+
+    <script>
+        const progressEl = document.getElementById('progress');
+        const logEl = document.getElementById('log');
+        const fileInput = document.getElementById('file-input');
+        const fileNameEl = document.getElementById('file-name');
+        let waitingInterval = null;
+        const waitingFrames = ['Przygotowuję analizę dokumentu .', 'Przygotowuję analizę dokumentu ..', 'Przygotowuję analizę dokumentu ...'];
+        let waitingIndex = 0;
+
+        fileInput.addEventListener('change', () => {
+            const files = fileInput.files;
+            fileNameEl.textContent = files && files.length ? files[0].name : 'Nie wybrano pliku';
+        });
+
+        function startWaitingAnimation() {
+            stopWaitingAnimation();
+            waitingIndex = 0;
+            progressEl.textContent = waitingFrames[waitingIndex];
+            waitingInterval = setInterval(() => {
+                waitingIndex = (waitingIndex + 1) % waitingFrames.length;
+                progressEl.textContent = waitingFrames[waitingIndex];
+            }, 600);
+        }
+
+        function stopWaitingAnimation() {
+            if (waitingInterval !== null) {
+                clearInterval(waitingInterval);
+                waitingInterval = null;
+            }
+        }
+
+        document.getElementById('upload-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+
+            progressEl.textContent = 'Przygotowuje analize';
+            logEl.textContent = '';
+            startWaitingAnimation();
+
+            fetch('upload', {
+                method: 'POST',
+                body: formData
+            }).then(response => {
+                if (response.ok) {
+                    const eventSource = new EventSource('stream');
+                    eventSource.onmessage = function(e) {
+                        if (e.data.includes('Przetwarzam stron')) {
+                            stopWaitingAnimation();
+                            progressEl.textContent = e.data.trim();
+                        } else {
+                            logEl.textContent += e.data + '\n';
+                            logEl.scrollTop = logEl.scrollHeight;
+                        }
+
+                        if (e.data.includes('[KONIEC]')) {
+                            eventSource.close();
+                            stopWaitingAnimation();
+                        }
+                    };
+                } else {
+                    alert('Błąd podczas przesyłania pliku.');
+                    stopWaitingAnimation();
+                }
+            }).catch(() => {
+                alert('Nie udało się wysłać pliku.');
+                stopWaitingAnimation();
+            });
+        });
+    </script>
+</body>
+</html>

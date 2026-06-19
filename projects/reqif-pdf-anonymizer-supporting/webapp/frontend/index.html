@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>ReqIF PDF Web Viewer</title>
+    <link rel="stylesheet" href="/static/styles.css?v=20241120">
+</head>
+<body>
+    <div id="app">
+        <aside class="sidebar">
+            <div class="sidebar-group">
+                <button id="openButton" type="button" class="button primary tooltip-target" data-tooltip="Select a PDF file to open in the viewer.">Open PDF</button>
+                <input id="fileInput" type="file" accept="application/pdf" hidden>
+                <button id="manageClientsButton" type="button" class="button tooltip-target" data-tooltip="Open the client dictionary to add or edit entries.">Manage Clients</button>
+            </div>
+
+            <div class="sidebar-group">
+                <label for="lineSpacingInput">Line spacing (px):</label>
+                <input id="lineSpacingInput" type="number" min="0" max="50" value="5" disabled>
+            </div>
+
+            <div class="sidebar-group">
+                <label for="headerInput">Header (px from top):</label>
+                <input id="headerInput" type="number" min="0" max="1000" value="0" disabled>
+            </div>
+
+            <div class="sidebar-group">
+                <label for="footerInput">Footer (px from bottom):</label>
+                <input id="footerInput" type="number" min="0" max="1000" value="0" disabled>
+            </div>
+
+            <div class="sidebar-group">
+                <button id="anonymizeButton" class="button" disabled>Anonymize</button>
+            </div>
+
+            <div class="sidebar-spacer"></div>
+        </aside>
+
+        <main class="viewer">
+            <div id="canvasContainer">
+                <canvas id="pdfCanvas"></canvas>
+                <canvas id="overlayCanvas"></canvas>
+            </div>
+            <div class="navigation">
+                <button id="prevButton" class="button" disabled>Previous</button>
+                <span id="pageIndicator">No document loaded</span>
+                <button id="nextButton" class="button" disabled>Next</button>
+            </div>
+        </main>
+    </div>
+
+    <div id="progressOverlay" class="hidden">
+        <div class="dialog">
+            <p id="progressText">Anonymization in progress...</p>
+            <div class="progress-bar">
+                <div id="progressFill"></div>
+            </div>
+            <div class="dialog-actions">
+                <a id="downloadLink" class="button secondary hidden" href="#" download>Download</a>
+                <button id="cancelJobButton" class="button">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="clientsOverlay" class="overlay hidden">
+        <div class="clients-dialog">
+            <div class="clients-header">
+                <h2>Clients Dictionary</h2>
+                <button id="closeClientsButton" class="icon-button" aria-label="Close clients dialog">×</button>
+            </div>
+            <div class="clients-body">
+                <div class="clients-list">
+                    <input id="clientSearchInput" type="text" placeholder="Filter by name or alias...">
+                    <ul id="clientsList"></ul>
+                </div>
+                <div class="clients-edit">
+                    <div class="form-field">
+                        <label for="clientCanonicalInput">Canonical
+                            <span class="help-icon tooltip-target" data-tooltip="Primary client name used for anonymized output.">?</span>
+                        </label>
+                        <input id="clientCanonicalInput" type="text" autocomplete="off">
+                    </div>
+                    <div class="form-field">
+                        <label for="clientAliasesInput">Aliases
+                            <span class="help-icon tooltip-target" data-tooltip="Alternative client names that also trigger a match (one per line).">?</span>
+                        </label>
+                        <textarea id="clientAliasesInput" rows="5" placeholder="Enter aliases, one per line"></textarea>
+                    </div>
+                    <div class="form-field">
+                        <label for="clientPatternsInput">Patterns
+                            <span class="help-icon tooltip-target" data-tooltip="Optional regular expressions for advanced matching (one per line).">?</span>
+                        </label>
+                        <textarea id="clientPatternsInput" rows="5" placeholder="Enter regex patterns, one per line"></textarea>
+                    </div>
+                    <div class="form-field checkbox">
+                        <label for="clientCaseCheckbox">Case-insensitive
+                            <span class="help-icon tooltip-target" data-tooltip="Enable to match client names without considering letter case.">?</span>
+                        </label>
+                        <input id="clientCaseCheckbox" type="checkbox" checked>
+                    </div>
+                    <div class="clients-actions">
+                        <button id="newClientButton" class="button secondary" type="button">New</button>
+                        <button id="saveClientButton" class="button primary" type="button">Save</button>
+                        <button id="testClientButton" class="button" type="button">Test on current PDF</button>
+                    </div>
+                    <div id="clientTestResult" class="test-result" role="status"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

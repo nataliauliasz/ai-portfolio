@@ -1,0 +1,8 @@
+Flask
+openpyxl
+pdfplumber
+pdf2image
+requests 
+opencv-python
+PyPDF2
+opencv-python
